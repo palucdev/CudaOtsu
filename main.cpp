@@ -5,6 +5,7 @@
 #include <iostream>
 
 #include "lodepng.h"
+#include "ImageFileUtil.h"
 
 // CUDA Runtime
 #include <cuda_runtime.h>
@@ -13,30 +14,6 @@
 
 extern "C" void cudaCalculateHistogram();
 extern "C" void cudaBinarize();
-
-void decodePNG(const char*  filename, std::vector<unsigned char>& image, unsigned* width, unsigned* height) {
-	std::vector<unsigned char> png;
-
-	unsigned imageWidth;
-	unsigned imageHeight;
-
-	unsigned error = lodepng::load_file(png, filename);
-	if (!error) error = lodepng::decode(image, imageWidth, imageHeight, png);
-
-	if (error) std::cout << lodepng_error_text(error) << std::endl;
-
-	*width = imageWidth;
-	*height = imageHeight;
-}
-
-void encodePNG(const char* filename, std::vector<unsigned char>& image, unsigned* width, unsigned* height) {
-	std::vector<unsigned char> png;
-
-	unsigned error = lodepng::encode(png, image, *width, *height);
-	if (!error) lodepng::save_file(png, filename);
-
-	if (error) std::cout << lodepng_error_text(error) << std::endl;
-}
 
 void calculateHistogram(std::vector<unsigned char>& image, std::vector<double>& histogram) {
 	std::vector<unsigned char> occurences(PIXEL_VALUE_RANGE);
@@ -101,7 +78,7 @@ int main(int argc, char **argv)
 	unsigned width = 0;
 	unsigned height = 0;
 
-	decodePNG(filename, image, &width, &height);
+	ImageFileUtil::loadPngFile(filename, image, &width, &height);
 
 	calculateHistogram(image, histogram);
 
@@ -109,7 +86,7 @@ int main(int argc, char **argv)
 
 	binarizeImage(image, threshold);
 
-	encodePNG(binarizedFilename, image, &width, &height);
+	ImageFileUtil::savePngFile(binarizedFilename, image, &width, &height);
 	
 	cudaCalculateHistogram();
 	cudaDeviceSynchronize();
