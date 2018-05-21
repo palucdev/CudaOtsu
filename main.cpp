@@ -6,6 +6,7 @@
 
 #include "lodepng.h"
 #include "ImageFileUtil.h"
+#include "PngImage.h"
 
 // CUDA Runtime
 #include <cuda_runtime.h>
@@ -55,14 +56,22 @@ int findThreshold(std::vector<double>& histogram, long int totalPixels) {
 	return threshold;
 }
 
-void binarizeImage(std::vector<unsigned char>& image, int threshold) {
-	for (std::vector<unsigned char>::size_type i = 0; i != image.size(); i++) {
-		if ((int)image[i] > threshold) {
-			image[i] = (unsigned char)255;
+PngImage* binarizeImage(PngImage* imageToBinarize, int threshold) {
+	std::vector<unsigned char> imagePixels = imageToBinarize->getRawPixelData();
+	for (std::vector<unsigned char>::size_type i = 0; i != imageToBinarize->getTotalPixels(); i++) {
+		if ((int)imagePixels[i] > threshold) {
+			imagePixels[i] = (unsigned char)255;
 		} else {
-			image[i] = (unsigned char)0;
+			imagePixels[i] = (unsigned char)0;
 		}
 	}
+
+	return new PngImage(
+		imageToBinarize->getFilename(),
+		imageToBinarize->getWidth(),
+		imageToBinarize->getHeight(),
+		imagePixels
+	);
 }
 
 int main(int argc, char **argv)
@@ -70,7 +79,7 @@ int main(int argc, char **argv)
 	//Kernel configuration, where a two-dimensional grid and
 	//three-dimensional blocks are configured.
 
-	std::vector<unsigned char> image; // raw pixels
+	//std::vector<unsigned char> image; // raw pixels
 	std::vector<double> histogram(PIXEL_VALUE_RANGE);
 
 	const char* filename = "assets/example_grey.png";
@@ -78,15 +87,15 @@ int main(int argc, char **argv)
 	unsigned width = 0;
 	unsigned height = 0;
 
-	ImageFileUtil::loadPngFile(filename, image, &width, &height);
+	PngImage* loadedImage = ImageFileUtil::loadPngFile(filename);
 
-	calculateHistogram(image, histogram);
+	calculateHistogram(loadedImage->getRawPixelData(), histogram);
 
-	int threshold = findThreshold(histogram, image.size());
+	int threshold = findThreshold(histogram, loadedImage->getTotalPixels());
 
-	binarizeImage(image, threshold);
+	PngImage* binarizedImage = binarizeImage(loadedImage, threshold);
 
-	ImageFileUtil::savePngFile(binarizedFilename, image, &width, &height);
+	ImageFileUtil::savePngFile(binarizedImage, binarizedFilename);
 	
 	cudaCalculateHistogram();
 	cudaDeviceSynchronize();
