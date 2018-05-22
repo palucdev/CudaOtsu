@@ -3,23 +3,25 @@
 // CUDA imports
 #include <cuda_runtime.h>
 
-extern "C" void cudaCalculateHistogram();
+extern "C" unsigned int* cudaCalculateHistogram(unsigned char* rawPixels, long totalPixels);
 extern "C" void cudaBinarize();
 
 OtsuBinarizer::OtsuBinarizer(){}
 
-PngImage * OtsuBinarizer::binarizeOnCpu(PngImage * imageToBinarize)
+PngImage* OtsuBinarizer::binarizeOnCpu(PngImage * imageToBinarize)
 {
-	std::vector<double> histogram(OtsuBinarizer::PIXEL_VALUE_RANGE);
+	std::vector<unsigned int> histogram(OtsuBinarizer::PIXEL_VALUE_RANGE);
 
 	calculateHistogram(imageToBinarize->getRawPixelData(), histogram);
+
+	showHistogram(histogram.data());
 
 	int threshold = findThreshold(histogram, imageToBinarize->getTotalPixels());
 
 	return binarizeImage(imageToBinarize, threshold);
 }
 
-void OtsuBinarizer::calculateHistogram(std::vector<unsigned char>& image, std::vector<double>& histogram) {
+void OtsuBinarizer::calculateHistogram(std::vector<unsigned char>& image, std::vector<unsigned int>& histogram) {
 	std::vector<unsigned char> occurences(OtsuBinarizer::PIXEL_VALUE_RANGE);
 	unsigned char pixelValue;
 
@@ -29,7 +31,7 @@ void OtsuBinarizer::calculateHistogram(std::vector<unsigned char>& image, std::v
 	}
 }
 
-int OtsuBinarizer::findThreshold(std::vector<double>& histogram, long int totalPixels) {
+int OtsuBinarizer::findThreshold(std::vector<unsigned int>& histogram, long int totalPixels) {
 	int threshold;
 	double firstClassProbability = 0, secondClassProbability = 0;
 	double firstClassMean = 0, secondClassMean = 0;
@@ -80,9 +82,20 @@ PngImage* OtsuBinarizer::binarizeImage(PngImage* imageToBinarize, int threshold)
 
 PngImage * OtsuBinarizer::binarizeOnGpu(PngImage * imageToBinarize)
 {
-	cudaCalculateHistogram();
+	unsigned int* histogram = new unsigned int[256];
+	histogram = cudaCalculateHistogram(imageToBinarize->getRawPixelData().data(), imageToBinarize->getRawPixelData().size());
 	cudaDeviceSynchronize();
-	cudaBinarize();
-	cudaDeviceSynchronize();
+	showHistogram(histogram);
+	//cudaBinarize();
+	//cudaDeviceSynchronize();
 	return nullptr;
+}
+
+void OtsuBinarizer::showHistogram(unsigned int* histogram) {
+	printf("Histogram:\n");
+	unsigned int value = 0;
+	for (int i = 0; i < 256; i++) {
+		value = histogram[i];
+		printf("\tPixel value %d -> %d\n", i, value);
+	}
 }
