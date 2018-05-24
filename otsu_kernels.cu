@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 
 // CUDA Runtime
 #include <cuda_runtime.h>
@@ -38,9 +39,16 @@ __global__ void computeClassVariances(unsigned int* histogram, double allProbabi
 	betweenClassVariance[id] = firstClassProbability * secondClassProbability * pow((firstClassMean - secondClassMean), 2);
 }
 
-__global__ void binarize()
+__global__ void binarize(unsigned char* rawPixels, long totalPixels, long chunkSize, unsigned char threshold)
 {
 	int id = blockDim.x * blockIdx.x + threadIdx.x;
+
+	int startPosition = id * chunkSize;
+	for (int i = startPosition; i < (startPosition + chunkSize); i++) {
+		if (i < totalPixels) {
+			rawPixels[i] = (int)threshold > rawPixels[i] ? (unsigned char)255 : (unsigned char)0;
+		}
+	}
 }
 
 extern "C" unsigned int* cudaCalculateHistogram(unsigned char* rawPixels, long totalPixels) {
@@ -115,9 +123,21 @@ extern "C" unsigned char cudaFindThreshold(unsigned int* histogram, long int tot
 	return currentBestThreshold;
 }
 
-extern "C" void cudaBinarize() {
-	dim3 dimGrid(2, 2);
-	dim3 dimBlock(2, 2, 2);
+extern "C" unsigned char* cudaBinarize(unsigned char* rawPixels, long totalPixels, unsigned char threshold) {
+	int threadsPerBlock = 256;
+	int numBlocks = 256;
 
-	binarize<<<dimGrid, dimBlock>>>();
+	unsigned char* deviceRawPixels;
+	cudaMalloc((void **)&deviceRawPixels, sizeof(unsigned char) * totalPixels);
+	cudaMemcpy(deviceRawPixels, rawPixels, totalPixels * sizeof(unsigned char), cudaMemcpyHostToDevice);
+
+	long chunkSize = totalPixels / (256 * 256);
+
+	binarize<<<numBlocks, threadsPerBlock>>>(deviceRawPixels, totalPixels, chunkSize, threshold);
+
+	cudaMemcpy(rawPixels, deviceRawPixels, 256 * sizeof(unsigned int), cudaMemcpyDeviceToHost);
+
+	cudaFree(deviceRawPixels);
+
+	return rawPixels;
 }

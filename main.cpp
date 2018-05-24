@@ -11,17 +11,19 @@
 int main(int argc, char **argv)
 {
 	const char* filename = "assets/example_grey.png";
-	const char* binarizedFilename = "assets/binarized_copy.png";
+	const char* cpuBinarizedFilename = "assets/cpu_binarized_copy.png";
+	const char* gpuBinarizedFilename = "assets/gpu_binarized_copy.png";
 
 	PngImage* loadedImage = ImageFileUtil::loadPngFile(filename);
 
-	PngImage* binarizedImage = OtsuBinarizer::binarizeOnCpu(loadedImage);
+	PngImage* cpuBinarizedImage = OtsuBinarizer::binarizeOnCpu(loadedImage);
 
-	ImageFileUtil::savePngFile(binarizedImage, binarizedFilename);
+	ImageFileUtil::savePngFile(cpuBinarizedImage, cpuBinarizedFilename);
 
-	// to test if CUDA kernels work
-	OtsuBinarizer::binarizeOnGpu(loadedImage);
+	PngImage* gpuBinarizedImage = OtsuBinarizer::binarizeOnGpu(loadedImage);
 	
+	ImageFileUtil::savePngFile(cpuBinarizedImage, gpuBinarizedFilename);
+
 	system("pause");
 	return 0;
 }
