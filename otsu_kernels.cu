@@ -1,9 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "PngImage.h"
+
 // CUDA Runtime
 #include <cuda_runtime.h>
-#define HISTOGRAM_SIZE 255
 
 __global__ void calculateHistogram(unsigned int* histogram, unsigned char* rawPixels, long chunkSize, long totalPixels)
 {
@@ -46,7 +47,7 @@ __global__ void binarize(unsigned char* rawPixels, long totalPixels, long chunkS
 	int startPosition = id * chunkSize;
 	for (int i = startPosition; i < (startPosition + chunkSize); i++) {
 		if (i < totalPixels) {
-			rawPixels[i] = (int)threshold > rawPixels[i] ? (unsigned char)255 : (unsigned char)0;
+			rawPixels[i] = (int)threshold > rawPixels[i] ? PngImage::COLOR_WHITE : PngImage::COLOR_BLACK;
 		}
 	}
 }
@@ -56,25 +57,25 @@ extern "C" unsigned int* cudaCalculateHistogram(unsigned char* rawPixels, long t
 	int numBlocks = 256;
 
 	//TODO: check cudaGetDeviceProperties function!
-
-	unsigned int* hostHistogram = new unsigned int[256];
-	for (int i = 0; i < 256; i++) {
+	 
+	unsigned int* hostHistogram = new unsigned int[PngImage::MAX_PIXEL_VALUE];
+	for (int i = 0; i < PngImage::MAX_PIXEL_VALUE; i++) {
 		hostHistogram[i] = 0;
 	}
 
 	unsigned int* deviceHistogram;
-	cudaMalloc((void **)&deviceHistogram, sizeof(unsigned int)*256);
-	cudaMemcpy(deviceHistogram, hostHistogram, 256 * sizeof(unsigned int), cudaMemcpyHostToDevice);
+	cudaMalloc((void **)&deviceHistogram, sizeof(unsigned int) * PngImage::MAX_PIXEL_VALUE);
+	cudaMemcpy(deviceHistogram, hostHistogram, sizeof(unsigned int) * PngImage::MAX_PIXEL_VALUE, cudaMemcpyHostToDevice);
 
 	unsigned char* deviceRawPixels;
-	cudaMalloc((void **)&deviceRawPixels, sizeof(unsigned char)*totalPixels);
-	cudaMemcpy(deviceRawPixels, rawPixels, totalPixels * sizeof(unsigned char), cudaMemcpyHostToDevice);
+	cudaMalloc((void **)&deviceRawPixels, sizeof(unsigned char) * totalPixels);
+	cudaMemcpy(deviceRawPixels, rawPixels, sizeof(unsigned char) * totalPixels, cudaMemcpyHostToDevice);
 
-	long chunkSize = totalPixels / (256 * 256);
+	long chunkSize = totalPixels / (threadsPerBlock * numBlocks);
 
 	calculateHistogram<<<numBlocks, threadsPerBlock>>>(deviceHistogram, deviceRawPixels, chunkSize, totalPixels);
 
-	cudaMemcpy(hostHistogram, deviceHistogram, 256 * sizeof(unsigned int), cudaMemcpyDeviceToHost);
+	cudaMemcpy(hostHistogram, deviceHistogram, sizeof(unsigned int) * PngImage::MAX_PIXEL_VALUE, cudaMemcpyDeviceToHost);
 
 	cudaFree(deviceHistogram);
 	cudaFree(deviceRawPixels);
@@ -87,33 +88,33 @@ extern "C" unsigned char cudaFindThreshold(unsigned int* histogram, long int tot
 	int numBlocks = 256;
 
 	double allProbabilitySum = 0;
-	for (int i = 0; i < 256; i++) {
+	for (int i = 0; i < PngImage::MAX_PIXEL_VALUE; i++) {
 		allProbabilitySum += i * histogram[i];
 	}
 
-	double* hostBetweenClassVariances = new double[256];
-	for (int i = 0; i < 256; i++) {
+	double* hostBetweenClassVariances = new double[PngImage::MAX_PIXEL_VALUE];
+	for (int i = 0; i < PngImage::MAX_PIXEL_VALUE; i++) {
 		hostBetweenClassVariances[i] = 0;
 	}
 
 	unsigned int* deviceHistogram;
-	cudaMalloc((void **)&deviceHistogram, sizeof(unsigned int) * 256);
-	cudaMemcpy(deviceHistogram, histogram, 256 * sizeof(unsigned int), cudaMemcpyHostToDevice);
+	cudaMalloc((void **)&deviceHistogram, sizeof(unsigned int) * PngImage::MAX_PIXEL_VALUE);
+	cudaMemcpy(deviceHistogram, histogram, sizeof(unsigned int) * PngImage::MAX_PIXEL_VALUE, cudaMemcpyHostToDevice);
 
 	double* deviceBetweenClassVariances;
-	cudaMalloc((void **)&deviceBetweenClassVariances, sizeof(double) * 256);
-	cudaMemcpy(deviceBetweenClassVariances, hostBetweenClassVariances, 256 * sizeof(double), cudaMemcpyHostToDevice);
+	cudaMalloc((void **)&deviceBetweenClassVariances, sizeof(double) * PngImage::MAX_PIXEL_VALUE);
+	cudaMemcpy(deviceBetweenClassVariances, hostBetweenClassVariances, sizeof(double) * PngImage::MAX_PIXEL_VALUE, cudaMemcpyHostToDevice);
 
 	computeClassVariances<<<numBlocks, threadsPerBlock>>>(deviceHistogram, allProbabilitySum, totalPixels, deviceBetweenClassVariances);
 
-	cudaMemcpy(hostBetweenClassVariances, deviceBetweenClassVariances, 256 * sizeof(unsigned int), cudaMemcpyDeviceToHost);
+	cudaMemcpy(hostBetweenClassVariances, deviceBetweenClassVariances, sizeof(unsigned int) * PngImage::MAX_PIXEL_VALUE, cudaMemcpyDeviceToHost);
 
 	cudaFree(deviceHistogram);
 	cudaFree(deviceBetweenClassVariances);
 
 	double maxVariance = 0;
 	unsigned char currentBestThreshold = 0;
-	for (int t = 0; t < 256; t++) {
+	for (int t = 0; t < PngImage::MAX_PIXEL_VALUE; t++) {
 		if (hostBetweenClassVariances[t] > maxVariance) {
 			currentBestThreshold = t;
 			maxVariance = hostBetweenClassVariances[t];
@@ -131,11 +132,11 @@ extern "C" unsigned char* cudaBinarize(unsigned char* rawPixels, long totalPixel
 	cudaMalloc((void **)&deviceRawPixels, sizeof(unsigned char) * totalPixels);
 	cudaMemcpy(deviceRawPixels, rawPixels, totalPixels * sizeof(unsigned char), cudaMemcpyHostToDevice);
 
-	long chunkSize = totalPixels / (256 * 256);
+	long chunkSize = totalPixels / (threadsPerBlock * numBlocks);
 
 	binarize<<<numBlocks, threadsPerBlock>>>(deviceRawPixels, totalPixels, chunkSize, threshold);
 
-	cudaMemcpy(rawPixels, deviceRawPixels, 256 * sizeof(unsigned int), cudaMemcpyDeviceToHost);
+	cudaMemcpy(rawPixels, deviceRawPixels, sizeof(unsigned int) * PngImage::MAX_PIXEL_VALUE, cudaMemcpyDeviceToHost);
 
 	cudaFree(deviceRawPixels);
 
