@@ -19,7 +19,7 @@ __global__ void calculateHistogram(unsigned int* histogram, unsigned char* rawPi
 	}
 }
 
-__global__ void computeClassVariances(unsigned int* histogram, double allProbabilitySum, long int totalPixels, double* betweenClassVariance)
+__global__ void computeClassVariances(double* histogram, double allProbabilitySum, long int totalPixels, double* betweenClassVariance)
 {
 	int id = blockDim.x * blockIdx.x + threadIdx.x;
 
@@ -27,12 +27,12 @@ __global__ void computeClassVariances(unsigned int* histogram, double allProbabi
 	double firstClassMean = 0, secondClassMean = 0;
 	double firstProbabilitySum = 0;
 
-	for (int t = 0; t < id; t++) {
+	for (int t = 0; t <= id; t++) {
 		firstClassProbability += histogram[t];
 		firstProbabilitySum += t * firstClassProbability;
 	}
 
-	secondClassProbability = totalPixels - firstClassProbability;
+	secondClassProbability = 1 - firstClassProbability;
 
 	firstClassMean = (double)firstProbabilitySum / (double)firstClassProbability;
 	secondClassMean = (double)(allProbabilitySum - firstProbabilitySum) / (double)secondClassProbability;
@@ -57,7 +57,7 @@ __global__ void binarize(unsigned char* rawPixels, long totalPixels, long chunkS
 	}
 }
 
-extern "C" unsigned int* cudaCalculateHistogram(unsigned char* rawPixels, long totalPixels) {
+extern "C" double* cudaCalculateHistogram(unsigned char* rawPixels, long totalPixels) {
 	int threadsPerBlock = 256;
 	int numBlocks = 256;
 
@@ -85,10 +85,17 @@ extern "C" unsigned int* cudaCalculateHistogram(unsigned char* rawPixels, long t
 	cudaFree(deviceHistogram);
 	cudaFree(deviceRawPixels);
 
-	return hostHistogram;
+	double* normalizedHistogram = new double[PngImage::MAX_PIXEL_VALUE];
+	for (int v = 0; v < PngImage::MAX_PIXEL_VALUE; v++) {
+		normalizedHistogram[v] = (double)hostHistogram[v] / (double)totalPixels;
+	}
+
+	free(hostHistogram);
+
+	return normalizedHistogram;
 }
 
-extern "C" unsigned char cudaFindThreshold(unsigned int* histogram, long int totalPixels) {
+extern "C" unsigned char cudaFindThreshold(double* histogram, long int totalPixels) {
 	int threadsPerBlock = 256;
 	int numBlocks = 256;
 
@@ -102,9 +109,9 @@ extern "C" unsigned char cudaFindThreshold(unsigned int* histogram, long int tot
 		hostBetweenClassVariances[i] = 0;
 	}
 
-	unsigned int* deviceHistogram;
-	cudaMalloc((void **)&deviceHistogram, sizeof(unsigned int) * PngImage::MAX_PIXEL_VALUE);
-	cudaMemcpy(deviceHistogram, histogram, sizeof(unsigned int) * PngImage::MAX_PIXEL_VALUE, cudaMemcpyHostToDevice);
+	double* deviceHistogram;
+	cudaMalloc((void **)&deviceHistogram, sizeof(double) * PngImage::MAX_PIXEL_VALUE);
+	cudaMemcpy(deviceHistogram, histogram, sizeof(double) * PngImage::MAX_PIXEL_VALUE, cudaMemcpyHostToDevice);
 
 	double* deviceBetweenClassVariances;
 	cudaMalloc((void **)&deviceBetweenClassVariances, sizeof(double) * PngImage::MAX_PIXEL_VALUE);
@@ -121,7 +128,7 @@ extern "C" unsigned char cudaFindThreshold(unsigned int* histogram, long int tot
 	unsigned char currentBestThreshold = 0;
 	for (int t = 0; t < PngImage::MAX_PIXEL_VALUE; t++) {
 		if (hostBetweenClassVariances[t] > maxVariance) {
-			currentBestThreshold = t;
+			currentBestThreshold = (unsigned char)t;
 			maxVariance = hostBetweenClassVariances[t];
 		}
 	}

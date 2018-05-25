@@ -3,15 +3,15 @@
 // CUDA imports
 #include <cuda_runtime.h>
 
-extern "C" unsigned int* cudaCalculateHistogram(unsigned char* rawPixels, long totalPixels);
-extern "C" unsigned char cudaFindThreshold(unsigned int* histogram, long int totalPixels);
+extern "C" double* cudaCalculateHistogram(unsigned char* rawPixels, long totalPixels);
+extern "C" unsigned char cudaFindThreshold(double* histogram, long int totalPixels);
 extern "C" unsigned char* cudaBinarize(unsigned char* rawPixels, long totalPixels, unsigned char threshold);
 
 OtsuBinarizer::OtsuBinarizer(){}
 
 PngImage* OtsuBinarizer::binarizeOnCpu(PngImage * imageToBinarize)
 {
-	std::vector<unsigned int> histogram(PngImage::MAX_PIXEL_VALUE);
+	std::vector<double> histogram(PngImage::MAX_PIXEL_VALUE);
 
 	calculateHistogram(imageToBinarize->getRawPixelData(), histogram);
 
@@ -24,17 +24,23 @@ PngImage* OtsuBinarizer::binarizeOnCpu(PngImage * imageToBinarize)
 	return binarizeImage(imageToBinarize, threshold);
 }
 
-void OtsuBinarizer::calculateHistogram(std::vector<unsigned char>& image, std::vector<unsigned int>& histogram) {
+void OtsuBinarizer::calculateHistogram(std::vector<unsigned char>& image, std::vector<double>& histogram) {
 	std::vector<unsigned char> occurences(PngImage::MAX_PIXEL_VALUE);
 	unsigned char pixelValue;
+	long totalPixels = image.size();
 
-	for (std::vector<unsigned char>::size_type i = 0; i != image.size(); i++) {
+	for (std::vector<unsigned char>::size_type i = 0; i != totalPixels; i++) {
 		pixelValue = image[i];
 		histogram[pixelValue]++;
 	}
+
+	// Normalization
+	for (std::vector<unsigned char>::size_type v = 0; v != PngImage::MAX_PIXEL_VALUE; v++) {
+		histogram[v] /= totalPixels;
+	}
 }
 
-int OtsuBinarizer::findThreshold(std::vector<unsigned int>& histogram, long int totalPixels) {
+int OtsuBinarizer::findThreshold(std::vector<double>& histogram, long int totalPixels) {
 	int threshold;
 	double firstClassProbability = 0, secondClassProbability = 0;
 	double firstClassMean = 0, secondClassMean = 0;
@@ -47,7 +53,7 @@ int OtsuBinarizer::findThreshold(std::vector<unsigned int>& histogram, long int 
 
 	for (int t = 0; t < PngImage::MAX_PIXEL_VALUE; t++) {
 		firstClassProbability += histogram[t];
-		secondClassProbability = totalPixels - firstClassProbability;
+		secondClassProbability = 1 - firstClassProbability;
 
 		firstProbabilitySum += t * histogram[t];
 		firstClassMean = (double)firstProbabilitySum / (double)firstClassProbability;
@@ -84,7 +90,7 @@ PngImage* OtsuBinarizer::binarizeImage(PngImage* imageToBinarize, int threshold)
 
 PngImage* OtsuBinarizer::binarizeOnGpu(PngImage * imageToBinarize)
 {
-	unsigned int* histogram = new unsigned int[PngImage::MAX_PIXEL_VALUE];
+	double* histogram = new double[PngImage::MAX_PIXEL_VALUE];
 	long totalImagePixels = (long)imageToBinarize->getRawPixelData().size();
 
 	histogram = cudaCalculateHistogram(imageToBinarize->getRawPixelData().data(), totalImagePixels);
@@ -109,11 +115,11 @@ PngImage* OtsuBinarizer::binarizeOnGpu(PngImage * imageToBinarize)
 	);
 }
 
-void OtsuBinarizer::showHistogram(unsigned int* histogram) {
+void OtsuBinarizer::showHistogram(double* histogram) {
 	printf("\nHistogram:\n");
-	unsigned int value = 0;
+	double value = 0;
 	for (int i = 0; i < PngImage::MAX_PIXEL_VALUE; i++) {
 		value = histogram[i];
-		printf("\tPixel value %d -> %d\n", i, value);
+		printf("\tPixel value %d -> %.5f\n", i, value);
 	}
 }
