@@ -92,14 +92,15 @@ PngImage* OtsuBinarizer::binarizeOnGpu(PngImage * imageToBinarize)
 	showHistogram(histogram);
 	
 	unsigned char threshold;
-	threshold = cudaFindThreshold(histogram, totalImagePixels);
+	//threshold = cudaFindThreshold(histogram, totalImagePixels);
+	threshold = (unsigned char)143;
 	cudaDeviceSynchronize();
-	printf("\t[GPU] Threshold value: %d", threshold);
+	printf("\t[GPU] Threshold value: %d\n", threshold);
 
 	unsigned char* binarizedRawPixels = cudaBinarize(imageToBinarize->getRawPixelData().data(), totalImagePixels, threshold);
 	cudaDeviceSynchronize();
 
-	std::vector<unsigned char> binarizedVector(binarizedRawPixels[0], binarizedRawPixels[totalImagePixels]);
+	std::vector<unsigned char> binarizedVector(&binarizedRawPixels[0], &binarizedRawPixels[totalImagePixels]);
 
 	return new PngImage(
 		imageToBinarize->getFilename(),

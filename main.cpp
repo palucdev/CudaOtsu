@@ -22,7 +22,7 @@ int main(int argc, char **argv)
 
 	PngImage* gpuBinarizedImage = OtsuBinarizer::binarizeOnGpu(loadedImage);
 	
-	ImageFileUtil::savePngFile(cpuBinarizedImage, gpuBinarizedFilename);
+	ImageFileUtil::savePngFile(gpuBinarizedImage, gpuBinarizedFilename);
 
 	system("pause");
 	return 0;

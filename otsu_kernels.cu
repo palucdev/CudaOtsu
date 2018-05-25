@@ -47,7 +47,12 @@ __global__ void binarize(unsigned char* rawPixels, long totalPixels, long chunkS
 	int startPosition = id * chunkSize;
 	for (int i = startPosition; i < (startPosition + chunkSize); i++) {
 		if (i < totalPixels) {
-			rawPixels[i] = (int)threshold > rawPixels[i] ? PngImage::COLOR_WHITE : PngImage::COLOR_BLACK;
+			if ((int)rawPixels[i] > (int)threshold) {
+				rawPixels[i] = PngImage::COLOR_WHITE;
+			}
+			else {
+				rawPixels[i] = PngImage::COLOR_BLACK;
+			}
 		}
 	}
 }
@@ -71,7 +76,7 @@ extern "C" unsigned int* cudaCalculateHistogram(unsigned char* rawPixels, long t
 	cudaMalloc((void **)&deviceRawPixels, sizeof(unsigned char) * totalPixels);
 	cudaMemcpy(deviceRawPixels, rawPixels, sizeof(unsigned char) * totalPixels, cudaMemcpyHostToDevice);
 
-	long chunkSize = totalPixels / (threadsPerBlock * numBlocks);
+	long chunkSize = ceil(totalPixels / (threadsPerBlock * numBlocks));
 
 	calculateHistogram<<<numBlocks, threadsPerBlock>>>(deviceHistogram, deviceRawPixels, chunkSize, totalPixels);
 
@@ -128,17 +133,19 @@ extern "C" unsigned char* cudaBinarize(unsigned char* rawPixels, long totalPixel
 	int threadsPerBlock = 256;
 	int numBlocks = 256;
 
+	unsigned char* hostRawPixels = new unsigned char[totalPixels];
+
 	unsigned char* deviceRawPixels;
 	cudaMalloc((void **)&deviceRawPixels, sizeof(unsigned char) * totalPixels);
 	cudaMemcpy(deviceRawPixels, rawPixels, totalPixels * sizeof(unsigned char), cudaMemcpyHostToDevice);
 
-	long chunkSize = totalPixels / (threadsPerBlock * numBlocks);
+	long chunkSize = ceil(totalPixels / (threadsPerBlock * numBlocks));
 
 	binarize<<<numBlocks, threadsPerBlock>>>(deviceRawPixels, totalPixels, chunkSize, threshold);
 
-	cudaMemcpy(rawPixels, deviceRawPixels, sizeof(unsigned int) * PngImage::MAX_PIXEL_VALUE, cudaMemcpyDeviceToHost);
+	cudaMemcpy(hostRawPixels, deviceRawPixels, sizeof(unsigned char) * totalPixels, cudaMemcpyDeviceToHost);
 
 	cudaFree(deviceRawPixels);
 
-	return rawPixels;
+	return hostRawPixels;
 }
