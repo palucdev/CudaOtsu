@@ -1,4 +1,4 @@
-#include "PngImage.h" 
+#include "model/PngImage.h" 
 
 #pragma once
 class OtsuBinarizer

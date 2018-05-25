@@ -1,5 +1,5 @@
-#include "ImageFileUtil.h"
-#include "lodepng.h"
+#include "../utils/ImageFileUtil.h"
+#include "../libs/lodepng.h"
 #include <iostream>
 
 

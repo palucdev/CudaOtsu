@@ -3,9 +3,9 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#include "lodepng.h"
-#include "ImageFileUtil.h"
-#include "PngImage.h"
+#include "libs/lodepng.h"
+#include "utils/ImageFileUtil.h"
+#include "model/PngImage.h"
 #include "OtsuBinarizer.h"
 
 int main(int argc, char **argv)

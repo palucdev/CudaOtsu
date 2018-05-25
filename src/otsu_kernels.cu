@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "PngImage.h"
+#include "model/PngImage.h"
 
 // CUDA Runtime
 #include <cuda_runtime.h>
