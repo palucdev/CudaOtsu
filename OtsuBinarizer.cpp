@@ -92,8 +92,7 @@ PngImage* OtsuBinarizer::binarizeOnGpu(PngImage * imageToBinarize)
 	showHistogram(histogram);
 	
 	unsigned char threshold;
-	//threshold = cudaFindThreshold(histogram, totalImagePixels);
-	threshold = (unsigned char)143;
+	threshold = cudaFindThreshold(histogram, totalImagePixels);
 	cudaDeviceSynchronize();
 	printf("\t[GPU] Threshold value: %d\n", threshold);
 
@@ -111,7 +110,7 @@ PngImage* OtsuBinarizer::binarizeOnGpu(PngImage * imageToBinarize)
 }
 
 void OtsuBinarizer::showHistogram(unsigned int* histogram) {
-	printf("Histogram:\n");
+	printf("\nHistogram:\n");
 	unsigned int value = 0;
 	for (int i = 0; i < PngImage::MAX_PIXEL_VALUE; i++) {
 		value = histogram[i];

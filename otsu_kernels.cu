@@ -76,7 +76,7 @@ extern "C" unsigned int* cudaCalculateHistogram(unsigned char* rawPixels, long t
 	cudaMalloc((void **)&deviceRawPixels, sizeof(unsigned char) * totalPixels);
 	cudaMemcpy(deviceRawPixels, rawPixels, sizeof(unsigned char) * totalPixels, cudaMemcpyHostToDevice);
 
-	long chunkSize = ceil(totalPixels / (threadsPerBlock * numBlocks));
+	long chunkSize = ceil(totalPixels / (threadsPerBlock * numBlocks)) + 1;
 
 	calculateHistogram<<<numBlocks, threadsPerBlock>>>(deviceHistogram, deviceRawPixels, chunkSize, totalPixels);
 
@@ -139,7 +139,7 @@ extern "C" unsigned char* cudaBinarize(unsigned char* rawPixels, long totalPixel
 	cudaMalloc((void **)&deviceRawPixels, sizeof(unsigned char) * totalPixels);
 	cudaMemcpy(deviceRawPixels, rawPixels, totalPixels * sizeof(unsigned char), cudaMemcpyHostToDevice);
 
-	long chunkSize = ceil(totalPixels / (threadsPerBlock * numBlocks));
+	long chunkSize = ceil(totalPixels / (threadsPerBlock * numBlocks)) + 1;
 
 	binarize<<<numBlocks, threadsPerBlock>>>(deviceRawPixels, totalPixels, chunkSize, threshold);
 
