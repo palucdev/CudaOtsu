@@ -18,3 +18,14 @@ Otsu's main idea is to find threshold that minimzes the intra-class variance wit
 
 ## Project goal
 Project is focused on implementing Otsu's method as CUDA kernels to test how well GPU will handle this algorithm in terms of computation time (comparing to multithreaded CPU implementation). Also it's a kind of CUDA playground for me as I'm absolute beginner in GPU computations. 
+
+## Current features 
+- C++ implementation of Otsu's method on CPU (single threaded)
+- Basic CUDA implementation of Otsu's method on GPU
+
+## To do
+- [ ] CUDA shared memory implementation
+- [ ] Concurrent CPU method implementation for benchmarking (openMP)
+- [ ] Memory optimization
+- [ ] UNIX makefile
+- [ ] Simple (cross-platform) GUI 
