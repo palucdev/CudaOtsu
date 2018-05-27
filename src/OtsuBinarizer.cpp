@@ -1,15 +1,8 @@
 #include "OtsuBinarizer.h"
 
-// CUDA imports
-#include <cuda_runtime.h>
-
-extern "C" double* cudaCalculateHistogram(unsigned char* rawPixels, long totalPixels);
-extern "C" unsigned char cudaFindThreshold(double* histogram, long int totalPixels);
-extern "C" unsigned char* cudaBinarize(unsigned char* rawPixels, long totalPixels, unsigned char threshold);
-
 OtsuBinarizer::OtsuBinarizer(){}
 
-PngImage* OtsuBinarizer::binarizeOnCpu(PngImage * imageToBinarize)
+PngImage* OtsuBinarizer::binarize(PngImage * imageToBinarize)
 {
 	std::vector<double> histogram(PngImage::MAX_PIXEL_VALUE);
 
@@ -85,33 +78,6 @@ PngImage* OtsuBinarizer::binarizeImage(PngImage* imageToBinarize, int threshold)
 		imageToBinarize->getWidth(),
 		imageToBinarize->getHeight(),
 		imagePixels
-	);
-}
-
-PngImage* OtsuBinarizer::binarizeOnGpu(PngImage * imageToBinarize)
-{
-	double* histogram = new double[PngImage::MAX_PIXEL_VALUE];
-	long totalImagePixels = (long)imageToBinarize->getRawPixelData().size();
-
-	histogram = cudaCalculateHistogram(imageToBinarize->getRawPixelData().data(), totalImagePixels);
-	cudaDeviceSynchronize();
-	showHistogram(histogram);
-	
-	unsigned char threshold;
-	threshold = cudaFindThreshold(histogram, totalImagePixels);
-	cudaDeviceSynchronize();
-	printf("\t[GPU] Threshold value: %d\n", threshold);
-
-	unsigned char* binarizedRawPixels = cudaBinarize(imageToBinarize->getRawPixelData().data(), totalImagePixels, threshold);
-	cudaDeviceSynchronize();
-
-	std::vector<unsigned char> binarizedVector(&binarizedRawPixels[0], &binarizedRawPixels[totalImagePixels]);
-
-	return new PngImage(
-		imageToBinarize->getFilename(),
-		imageToBinarize->getWidth(),
-		imageToBinarize->getHeight(),
-		binarizedVector
 	);
 }
 

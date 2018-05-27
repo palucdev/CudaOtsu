@@ -4,8 +4,7 @@
 class OtsuBinarizer
 {
 public:
-	static PngImage* binarizeOnCpu(PngImage* imageToBinarize);
-	static PngImage* binarizeOnGpu(PngImage* imageToBinarize);
+	static PngImage* binarize(PngImage* imageToBinarize);
 private:
 	OtsuBinarizer();
 	static void calculateHistogram(std::vector<unsigned char>& image, std::vector<double>& histogram);

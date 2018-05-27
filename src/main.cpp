@@ -8,6 +8,7 @@
 #include "utils/ImageFileUtil.h"
 #include "model/PngImage.h"
 #include "OtsuBinarizer.h"
+#include "CudaOtsuBinarizer.cuh"
 
 int main(int argc, char **argv)
 {
@@ -22,11 +23,11 @@ int main(int argc, char **argv)
 		if (loadedImage != nullptr) {
 			std::string cpuBinarizedFilename = ImageFileUtil::addPrefix(fullFilePath, "cpu_binarized_");
 
-			PngImage* cpuBinarizedImage = OtsuBinarizer::binarizeOnCpu(loadedImage);
+			PngImage* cpuBinarizedImage = OtsuBinarizer::binarize(loadedImage);
 
 			ImageFileUtil::savePngFile(cpuBinarizedImage, cpuBinarizedFilename.c_str());
 
-			PngImage* gpuBinarizedImage = OtsuBinarizer::binarizeOnGpu(loadedImage);
+			PngImage* gpuBinarizedImage = CudaOtsuBinarizer::binarize(loadedImage);
 
 			std::string gpuBinarizedFilename = ImageFileUtil::addPrefix(fullFilePath, "gpu_binarized_");
 

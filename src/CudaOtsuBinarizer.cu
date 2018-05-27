@@ -1,12 +1,9 @@
-#include <stdio.h>
-#include <stdlib.h>
+#include "CudaOtsuBinarizer.cuh"
 
-#include "model/PngImage.h"
-
-// CUDA Runtime
+// CUDA imports
 #include <cuda_runtime.h>
 
-__global__ void calculateHistogram(unsigned int* histogram, unsigned char* rawPixels, long chunkSize, long totalPixels)
+__global__ void kernelCalculateHistogram(unsigned int* histogram, unsigned char* rawPixels, long chunkSize, long totalPixels)
 {
 	int id = blockDim.x * blockIdx.x + threadIdx.x;
 
@@ -19,7 +16,7 @@ __global__ void calculateHistogram(unsigned int* histogram, unsigned char* rawPi
 	}
 }
 
-__global__ void computeClassVariances(double* histogram, double allProbabilitySum, long int totalPixels, double* betweenClassVariance)
+__global__ void kernelComputeClassVariances(double* histogram, double allProbabilitySum, long int totalPixels, double* betweenClassVariance)
 {
 	int id = blockDim.x * blockIdx.x + threadIdx.x;
 
@@ -40,14 +37,14 @@ __global__ void computeClassVariances(double* histogram, double allProbabilitySu
 	betweenClassVariance[id] = firstClassProbability * secondClassProbability * pow((firstClassMean - secondClassMean), 2);
 }
 
-__global__ void binarize(unsigned char* rawPixels, long totalPixels, long chunkSize, unsigned char threshold)
+__global__ void kernelBinarize(unsigned char* rawPixels, long totalPixels, long chunkSize, unsigned char threshold)
 {
 	int id = blockDim.x * blockIdx.x + threadIdx.x;
 
 	int startPosition = id * chunkSize;
 	for (int i = startPosition; i < (startPosition + chunkSize); i++) {
 		if (i < totalPixels) {
-			if ((int)rawPixels[i] > (int)threshold) {
+			if ((int)rawPixels[i] >(int)threshold) {
 				rawPixels[i] = PngImage::COLOR_WHITE;
 			}
 			else {
@@ -57,12 +54,50 @@ __global__ void binarize(unsigned char* rawPixels, long totalPixels, long chunkS
 	}
 }
 
-extern "C" double* cudaCalculateHistogram(unsigned char* rawPixels, long totalPixels) {
+CudaOtsuBinarizer::CudaOtsuBinarizer() {}
+
+PngImage* CudaOtsuBinarizer::binarize(PngImage * imageToBinarize)
+{
+	double* histogram = new double[PngImage::MAX_PIXEL_VALUE];
+	long totalImagePixels = (long)imageToBinarize->getRawPixelData().size();
+
+	histogram = cudaCalculateHistogram(imageToBinarize->getRawPixelData().data(), totalImagePixels);
+	cudaDeviceSynchronize();
+	showHistogram(histogram);
+
+	unsigned char threshold;
+	threshold = cudaFindThreshold(histogram, totalImagePixels);
+	cudaDeviceSynchronize();
+	printf("\t[GPU] Threshold value: %d\n", threshold);
+
+	unsigned char* binarizedRawPixels = cudaBinarize(imageToBinarize->getRawPixelData().data(), totalImagePixels, threshold);
+	cudaDeviceSynchronize();
+
+	std::vector<unsigned char> binarizedVector(&binarizedRawPixels[0], &binarizedRawPixels[totalImagePixels]);
+
+	return new PngImage(
+		imageToBinarize->getFilename(),
+		imageToBinarize->getWidth(),
+		imageToBinarize->getHeight(),
+		binarizedVector
+	);
+}
+
+void CudaOtsuBinarizer::showHistogram(double* histogram) {
+	printf("\nHistogram:\n");
+	double value = 0;
+	for (int i = 0; i < PngImage::MAX_PIXEL_VALUE; i++) {
+		value = histogram[i];
+		printf("\tPixel value %d -> %.5f\n", i, value);
+	}
+}
+
+double* CudaOtsuBinarizer::cudaCalculateHistogram(unsigned char* rawPixels, long totalPixels) {
 	int threadsPerBlock = 256;
 	int numBlocks = 256;
 
 	//TODO: check cudaGetDeviceProperties function!
-	 
+
 	unsigned int* hostHistogram = new unsigned int[PngImage::MAX_PIXEL_VALUE];
 	for (int i = 0; i < PngImage::MAX_PIXEL_VALUE; i++) {
 		hostHistogram[i] = 0;
@@ -78,8 +113,8 @@ extern "C" double* cudaCalculateHistogram(unsigned char* rawPixels, long totalPi
 
 	long chunkSize = ceil(totalPixels / (threadsPerBlock * numBlocks)) + 1;
 
-	calculateHistogram<<<numBlocks, threadsPerBlock>>>(deviceHistogram, deviceRawPixels, chunkSize, totalPixels);
-
+	kernelCalculateHistogram << <numBlocks, threadsPerBlock >> >(deviceHistogram, deviceRawPixels, chunkSize, totalPixels);
+	
 	cudaMemcpy(hostHistogram, deviceHistogram, sizeof(unsigned int) * PngImage::MAX_PIXEL_VALUE, cudaMemcpyDeviceToHost);
 
 	cudaFree(deviceHistogram);
@@ -95,7 +130,7 @@ extern "C" double* cudaCalculateHistogram(unsigned char* rawPixels, long totalPi
 	return normalizedHistogram;
 }
 
-extern "C" unsigned char cudaFindThreshold(double* histogram, long int totalPixels) {
+unsigned char CudaOtsuBinarizer::cudaFindThreshold(double* histogram, long int totalPixels) {
 	int threadsPerBlock = 16;
 	int numBlocks = 16;
 
@@ -117,7 +152,7 @@ extern "C" unsigned char cudaFindThreshold(double* histogram, long int totalPixe
 	cudaMalloc((void **)&deviceBetweenClassVariances, sizeof(double) * PngImage::MAX_PIXEL_VALUE);
 	cudaMemcpy(deviceBetweenClassVariances, hostBetweenClassVariances, sizeof(double) * PngImage::MAX_PIXEL_VALUE, cudaMemcpyHostToDevice);
 
-	computeClassVariances<<<numBlocks, threadsPerBlock>>>(deviceHistogram, allProbabilitySum, totalPixels, deviceBetweenClassVariances);
+	kernelComputeClassVariances<<<numBlocks, threadsPerBlock>>>(deviceHistogram, allProbabilitySum, totalPixels, deviceBetweenClassVariances);
 
 	cudaMemcpy(hostBetweenClassVariances, deviceBetweenClassVariances, sizeof(double) * PngImage::MAX_PIXEL_VALUE, cudaMemcpyDeviceToHost);
 
@@ -136,7 +171,7 @@ extern "C" unsigned char cudaFindThreshold(double* histogram, long int totalPixe
 	return currentBestThreshold;
 }
 
-extern "C" unsigned char* cudaBinarize(unsigned char* rawPixels, long totalPixels, unsigned char threshold) {
+unsigned char* CudaOtsuBinarizer::cudaBinarize(unsigned char * rawPixels, long totalPixels, unsigned char threshold) {
 	int threadsPerBlock = 256;
 	int numBlocks = 256;
 
@@ -148,7 +183,7 @@ extern "C" unsigned char* cudaBinarize(unsigned char* rawPixels, long totalPixel
 
 	long chunkSize = ceil(totalPixels / (threadsPerBlock * numBlocks)) + 1;
 
-	binarize<<<numBlocks, threadsPerBlock>>>(deviceRawPixels, totalPixels, chunkSize, threshold);
+	kernelBinarize<<<numBlocks, threadsPerBlock>>>(deviceRawPixels, totalPixels, chunkSize, threshold);
 
 	cudaMemcpy(hostRawPixels, deviceRawPixels, sizeof(unsigned char) * totalPixels, cudaMemcpyDeviceToHost);
 
