@@ -58,10 +58,9 @@ CudaOtsuBinarizer::CudaOtsuBinarizer() {}
 
 PngImage* CudaOtsuBinarizer::binarize(PngImage * imageToBinarize)
 {
-	double* histogram = new double[PngImage::MAX_PIXEL_VALUE];
 	long totalImagePixels = (long)imageToBinarize->getRawPixelData().size();
 
-	histogram = cudaCalculateHistogram(imageToBinarize->getRawPixelData().data(), totalImagePixels);
+	double* histogram = cudaCalculateHistogram(imageToBinarize->getRawPixelData().data(), totalImagePixels);
 	cudaDeviceSynchronize();
 	showHistogram(histogram);
 
@@ -70,10 +69,14 @@ PngImage* CudaOtsuBinarizer::binarize(PngImage * imageToBinarize)
 	cudaDeviceSynchronize();
 	printf("\t[GPU] Threshold value: %d\n", threshold);
 
+	delete histogram;
+
 	unsigned char* binarizedRawPixels = cudaBinarize(imageToBinarize->getRawPixelData().data(), totalImagePixels, threshold);
 	cudaDeviceSynchronize();
 
 	std::vector<unsigned char> binarizedVector(&binarizedRawPixels[0], &binarizedRawPixels[totalImagePixels]);
+
+	delete binarizedRawPixels;
 
 	return new PngImage(
 		imageToBinarize->getFilename(),
@@ -152,8 +155,9 @@ unsigned char CudaOtsuBinarizer::cudaFindThreshold(double* histogram, long int t
 	cudaMalloc((void **)&deviceBetweenClassVariances, sizeof(double) * PngImage::MAX_PIXEL_VALUE);
 	cudaMemcpy(deviceBetweenClassVariances, hostBetweenClassVariances, sizeof(double) * PngImage::MAX_PIXEL_VALUE, cudaMemcpyHostToDevice);
 
-	kernelComputeClassVariances<<<numBlocks, threadsPerBlock>>>(deviceHistogram, allProbabilitySum, totalPixels, deviceBetweenClassVariances);
+	delete hostBetweenClassVariances;
 
+	kernelComputeClassVariances<<<numBlocks, threadsPerBlock>>>(deviceHistogram, allProbabilitySum, totalPixels, deviceBetweenClassVariances);
 	cudaMemcpy(hostBetweenClassVariances, deviceBetweenClassVariances, sizeof(double) * PngImage::MAX_PIXEL_VALUE, cudaMemcpyDeviceToHost);
 
 	cudaFree(deviceHistogram);

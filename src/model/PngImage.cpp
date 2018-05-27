@@ -11,7 +11,12 @@ PngImage::PngImage(const char* filename, unsigned width, unsigned height, std::v
 	this->totalPixels_ = rawPixelData.size();
 }
 
-PngImage::~PngImage(){}
+PngImage::~PngImage()
+{
+	this->rawPixelData_.clear();
+	this->rawPixelData_.resize(0);
+	this->rawPixelData_.shrink_to_fit();
+}
 
 const char * PngImage::getFilename()
 {
