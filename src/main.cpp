@@ -4,7 +4,8 @@
 #include <assert.h>
 #include <iostream>
 
-#include "vld.h"
+// Memory leaks checking
+// #include "vld.h"
 
 #include "libs/lodepng.h"
 #include "utils/ImageFileUtil.h"

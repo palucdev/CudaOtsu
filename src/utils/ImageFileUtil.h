@@ -1,4 +1,5 @@
 #include <vector>
+#include <string>
 #include "../model/PngImage.h"
 
 #pragma once
@@ -14,6 +15,6 @@ private:
 	static std::vector<std::string> splitString(std::string stringToSplit, const char delimiter);
 	static std::string joinString(std::vector<std::string> strings, const char delimiter = '\0');
 	static bool fileExists(const char * fileName);
-	static const char ImageFileUtil::getOsPathDelimiter();
+	static const char getOsPathDelimiter();
 };
 

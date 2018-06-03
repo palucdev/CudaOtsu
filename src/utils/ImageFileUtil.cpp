@@ -3,7 +3,6 @@
 #include <iostream>
 #include <sstream>
 #include <vector>
-#include <filesystem>
 #include <fstream>
 
 ImageFileUtil::ImageFileUtil() {}
@@ -90,8 +89,7 @@ bool ImageFileUtil::fileExists(const char *fileName)
 const char ImageFileUtil::getOsPathDelimiter() {
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
 	return '\\';
-#else
-	return "/";
 #endif
+	return '/';
 }
 

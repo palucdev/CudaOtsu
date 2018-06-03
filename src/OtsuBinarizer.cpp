@@ -1,4 +1,5 @@
 #include "OtsuBinarizer.h"
+#include <stdio.h>
 
 OtsuBinarizer::OtsuBinarizer(){}
 
@@ -17,7 +18,7 @@ PngImage* OtsuBinarizer::binarize(PngImage * imageToBinarize)
 	return binarizeImage(imageToBinarize, threshold);
 }
 
-void OtsuBinarizer::calculateHistogram(std::vector<unsigned char>& image, std::vector<double>& histogram) {
+void OtsuBinarizer::calculateHistogram(const std::vector<unsigned char>& image, std::vector<double>& histogram) {
 	std::vector<unsigned char> occurences(PngImage::MAX_PIXEL_VALUE);
 	unsigned char pixelValue;
 	long totalPixels = image.size();

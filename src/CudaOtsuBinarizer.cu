@@ -1,5 +1,7 @@
 #include "CudaOtsuBinarizer.cuh"
 
+#include <stdio.h>
+
 // CUDA imports
 #include <cuda_runtime.h>
 
@@ -128,7 +130,7 @@ double* CudaOtsuBinarizer::cudaCalculateHistogram(unsigned char* rawPixels, long
 		normalizedHistogram[v] = (double)hostHistogram[v] / (double)totalPixels;
 	}
 
-	free(hostHistogram);
+	delete hostHistogram;
 
 	return normalizedHistogram;
 }
@@ -155,7 +157,7 @@ unsigned char CudaOtsuBinarizer::cudaFindThreshold(double* histogram, long int t
 	cudaMalloc((void **)&deviceBetweenClassVariances, sizeof(double) * PngImage::MAX_PIXEL_VALUE);
 	cudaMemcpy(deviceBetweenClassVariances, hostBetweenClassVariances, sizeof(double) * PngImage::MAX_PIXEL_VALUE, cudaMemcpyHostToDevice);
 
-	delete hostBetweenClassVariances;
+	//delete hostBetweenClassVariances;
 
 	kernelComputeClassVariances<<<numBlocks, threadsPerBlock>>>(deviceHistogram, allProbabilitySum, totalPixels, deviceBetweenClassVariances);
 	cudaMemcpy(hostBetweenClassVariances, deviceBetweenClassVariances, sizeof(double) * PngImage::MAX_PIXEL_VALUE, cudaMemcpyDeviceToHost);
