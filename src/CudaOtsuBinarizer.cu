@@ -157,8 +157,6 @@ unsigned char CudaOtsuBinarizer::cudaFindThreshold(double* histogram, long int t
 	cudaMalloc((void **)&deviceBetweenClassVariances, sizeof(double) * PngImage::MAX_PIXEL_VALUE);
 	cudaMemcpy(deviceBetweenClassVariances, hostBetweenClassVariances, sizeof(double) * PngImage::MAX_PIXEL_VALUE, cudaMemcpyHostToDevice);
 
-	//delete hostBetweenClassVariances;
-
 	kernelComputeClassVariances<<<numBlocks, threadsPerBlock>>>(deviceHistogram, allProbabilitySum, totalPixels, deviceBetweenClassVariances);
 	cudaMemcpy(hostBetweenClassVariances, deviceBetweenClassVariances, sizeof(double) * PngImage::MAX_PIXEL_VALUE, cudaMemcpyDeviceToHost);
 
@@ -173,6 +171,8 @@ unsigned char CudaOtsuBinarizer::cudaFindThreshold(double* histogram, long int t
 			maxVariance = hostBetweenClassVariances[t];
 		}
 	}
+
+	delete hostBetweenClassVariances;
 
 	return currentBestThreshold;
 }
