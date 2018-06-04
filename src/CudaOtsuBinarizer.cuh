@@ -5,14 +5,16 @@ class CudaOtsuBinarizer
 {
 public:
 	PngImage* binarize(PngImage* imageToBinarize);
-	CudaOtsuBinarizer(int threadsPerBlock, int numBlocks);
+	CudaOtsuBinarizer(int threadsPerBlock, int numBlocks, const char* TAG = "GPU");
 	~CudaOtsuBinarizer();
-private:
+protected:
 	int threadsPerBlock_;
 	int numBlocks_;
+	float executionTime_;
+	const char* TAG;
 	void showHistogram(double* histogram);
-	double* cudaCalculateHistogram(unsigned char* rawPixels, long totalPixels);
-	unsigned char cudaFindThreshold(double* histogram, long int totalPixels);
-	unsigned char* cudaBinarize(unsigned char* rawPixels, long totalPixels, unsigned char threshold);
+	virtual double* cudaCalculateHistogram(unsigned char* rawPixels, long totalPixels);
+	virtual unsigned char cudaFindThreshold(double* histogram, long int totalPixels);
+	virtual unsigned char* cudaBinarize(unsigned char* rawPixels, long totalPixels, unsigned char threshold);
 };
 

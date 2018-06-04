@@ -9,7 +9,7 @@ PngImage* OtsuBinarizer::binarize(PngImage * imageToBinarize)
 
 	calculateHistogram(imageToBinarize->getRawPixelData(), histogram);
 
-	showHistogram(histogram.data());
+	//showHistogram(histogram.data());
 
 	int threshold = findThreshold(histogram, imageToBinarize->getTotalPixels());
 
