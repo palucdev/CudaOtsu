@@ -22,10 +22,12 @@ Project is focused on implementing Otsu's method as CUDA kernels to test how wel
 ## Current features 
 - C++ implementation of Otsu's method on CPU (single threaded)
 - Basic CUDA implementation of Otsu's method on GPU
+- Basic CUDA shared memory usage (no huge speed boost here, Otsu's algorithm gains very little from cache)
+- Makefile for more multiplatform approach
+- Extendable Binarizers architecture
 
 ## To do
-- [ ] CUDA shared memory implementation
 - [ ] Concurrent CPU method implementation for benchmarking (openMP)
 - [ ] Memory optimization
-- [ ] UNIX makefile
 - [ ] Simple (cross-platform) GUI 
+- [ ] Research and compare different CUDA optimization mechanisms 
