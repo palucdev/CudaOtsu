@@ -4,12 +4,15 @@
 class CudaOtsuBinarizer
 {
 public:
-	static PngImage* binarize(PngImage* imageToBinarize);
+	PngImage* binarize(PngImage* imageToBinarize);
+	CudaOtsuBinarizer(int threadsPerBlock, int numBlocks);
+	~CudaOtsuBinarizer();
 private:
-	CudaOtsuBinarizer();
-	static void showHistogram(double* histogram);
-	static double* cudaCalculateHistogram(unsigned char* rawPixels, long totalPixels);
-	static unsigned char cudaFindThreshold(double* histogram, long int totalPixels);
-	static unsigned char* cudaBinarize(unsigned char* rawPixels, long totalPixels, unsigned char threshold);
+	int threadsPerBlock_;
+	int numBlocks_;
+	void showHistogram(double* histogram);
+	double* cudaCalculateHistogram(unsigned char* rawPixels, long totalPixels);
+	unsigned char cudaFindThreshold(double* histogram, long int totalPixels);
+	unsigned char* cudaBinarize(unsigned char* rawPixels, long totalPixels, unsigned char threshold);
 };
 

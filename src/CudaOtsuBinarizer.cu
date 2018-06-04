@@ -56,7 +56,12 @@ __global__ void kernelBinarize(unsigned char* rawPixels, long totalPixels, long 
 	}
 }
 
-CudaOtsuBinarizer::CudaOtsuBinarizer() {}
+CudaOtsuBinarizer::CudaOtsuBinarizer(int threadsPerBlock, int numBlocks) {
+	this->threadsPerBlock_ = threadsPerBlock;
+	this->numBlocks_ = numBlocks;
+}
+
+CudaOtsuBinarizer::~CudaOtsuBinarizer() {}
 
 PngImage* CudaOtsuBinarizer::binarize(PngImage * imageToBinarize)
 {
@@ -98,9 +103,6 @@ void CudaOtsuBinarizer::showHistogram(double* histogram) {
 }
 
 double* CudaOtsuBinarizer::cudaCalculateHistogram(unsigned char* rawPixels, long totalPixels) {
-	int threadsPerBlock = 256;
-	int numBlocks = 256;
-
 	//TODO: check cudaGetDeviceProperties function!
 
 	unsigned int* hostHistogram = new unsigned int[PngImage::MAX_PIXEL_VALUE];
@@ -116,9 +118,9 @@ double* CudaOtsuBinarizer::cudaCalculateHistogram(unsigned char* rawPixels, long
 	cudaMalloc((void **)&deviceRawPixels, sizeof(unsigned char) * totalPixels);
 	cudaMemcpy(deviceRawPixels, rawPixels, sizeof(unsigned char) * totalPixels, cudaMemcpyHostToDevice);
 
-	long chunkSize = ceil(totalPixels / (threadsPerBlock * numBlocks)) + 1;
+	long chunkSize = ceil(totalPixels / (threadsPerBlock_ * numBlocks_)) + 1;
 
-	kernelCalculateHistogram << <numBlocks, threadsPerBlock >> >(deviceHistogram, deviceRawPixels, chunkSize, totalPixels);
+	kernelCalculateHistogram<<<numBlocks_, threadsPerBlock_>>>(deviceHistogram, deviceRawPixels, chunkSize, totalPixels);
 	
 	cudaMemcpy(hostHistogram, deviceHistogram, sizeof(unsigned int) * PngImage::MAX_PIXEL_VALUE, cudaMemcpyDeviceToHost);
 
@@ -178,8 +180,6 @@ unsigned char CudaOtsuBinarizer::cudaFindThreshold(double* histogram, long int t
 }
 
 unsigned char* CudaOtsuBinarizer::cudaBinarize(unsigned char * rawPixels, long totalPixels, unsigned char threshold) {
-	int threadsPerBlock = 256;
-	int numBlocks = 256;
 
 	unsigned char* hostRawPixels = new unsigned char[totalPixels];
 
@@ -187,9 +187,9 @@ unsigned char* CudaOtsuBinarizer::cudaBinarize(unsigned char * rawPixels, long t
 	cudaMalloc((void **)&deviceRawPixels, sizeof(unsigned char) * totalPixels);
 	cudaMemcpy(deviceRawPixels, rawPixels, totalPixels * sizeof(unsigned char), cudaMemcpyHostToDevice);
 
-	long chunkSize = ceil(totalPixels / (threadsPerBlock * numBlocks)) + 1;
+	long chunkSize = ceil(totalPixels / (threadsPerBlock_ * numBlocks_)) + 1;
 
-	kernelBinarize<<<numBlocks, threadsPerBlock>>>(deviceRawPixels, totalPixels, chunkSize, threshold);
+	kernelBinarize<<<numBlocks_, threadsPerBlock_>>>(deviceRawPixels, totalPixels, chunkSize, threshold);
 
 	cudaMemcpy(hostRawPixels, deviceRawPixels, sizeof(unsigned char) * totalPixels, cudaMemcpyDeviceToHost);
 

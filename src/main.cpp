@@ -13,40 +13,47 @@
 #include "OtsuBinarizer.h"
 #include "CudaOtsuBinarizer.cuh"
 
+// CudaOtsu filepath/dirpath threadsPerBlock numBlocks
 int main(int argc, char **argv)
 {
 	std::string fullFilePath;
+	int threadsPerBlock;
+	int numBlocks;
 
-	while (1) {
-		std::cout << "\nEnter full path to .png image file" << std::endl;
-		std::cin >> fullFilePath;
-
-		if (fullFilePath == "exit") {
-			break;
+	if (argc > 1) {
+		fullFilePath = argv[1];
+		if (argc > 3) {
+			threadsPerBlock =  (int)argv[2];
+			numBlocks = (int)argv[3];
+		} else {
+			threadsPerBlock = 256;
+			numBlocks = 256;
 		}
-
-		PngImage* loadedImage = ImageFileUtil::loadPngFile(fullFilePath.c_str());
-
-		if (loadedImage != nullptr) {
-			std::string cpuBinarizedFilename = ImageFileUtil::addPrefix(fullFilePath, "cpu_binarized_");
-
-			PngImage* cpuBinarizedImage = OtsuBinarizer::binarize(loadedImage);
-
-			ImageFileUtil::savePngFile(cpuBinarizedImage, cpuBinarizedFilename.c_str());
-
-			delete cpuBinarizedImage;
-
-			PngImage* gpuBinarizedImage = CudaOtsuBinarizer::binarize(loadedImage);
-
-			std::string gpuBinarizedFilename = ImageFileUtil::addPrefix(fullFilePath, "gpu_binarized_");
-
-			ImageFileUtil::savePngFile(gpuBinarizedImage, gpuBinarizedFilename.c_str());
-			
-			delete gpuBinarizedImage;
-		}
-
-		delete loadedImage;
 	}
+
+	PngImage* loadedImage = ImageFileUtil::loadPngFile(fullFilePath.c_str());
+
+	if (loadedImage != nullptr) {
+		std::string cpuBinarizedFilename = ImageFileUtil::addPrefix(fullFilePath, "cpu_binarized_");
+
+		PngImage* cpuBinarizedImage = OtsuBinarizer::binarize(loadedImage);
+
+		ImageFileUtil::savePngFile(cpuBinarizedImage, cpuBinarizedFilename.c_str());
+
+		delete cpuBinarizedImage;
+
+		CudaOtsuBinarizer* cudaBinarizer = new CudaOtsuBinarizer(threadsPerBlock, numBlocks);
+
+		PngImage* gpuBinarizedImage = cudaBinarizer->binarize(loadedImage);
+
+		std::string gpuBinarizedFilename = ImageFileUtil::addPrefix(fullFilePath, "gpu_binarized_");
+
+		ImageFileUtil::savePngFile(gpuBinarizedImage, gpuBinarizedFilename.c_str());
+
+		delete gpuBinarizedImage;
+	}
+
+	delete loadedImage;
 
 	system("pause");
 	return 0;
