@@ -13,6 +13,7 @@
 #include "OtsuBinarizer.h"
 #include "CudaOtsuBinarizer.cuh"
 #include "SMCudaOtsuBinarizer.cuh"
+#include "MonoCudaOtsuBinarizer.cuh"
 
 // CudaOtsu filepath/dirpath threadsPerBlock numBlocks
 int main(int argc, char **argv)
@@ -30,18 +31,19 @@ int main(int argc, char **argv)
 			threadsPerBlock = 512;
 			numBlocks = 512;
 		}
-	}
-
+	} 
+	
 	PngImage* loadedImage = ImageFileUtil::loadPngFile(fullFilePath.c_str());
 
 	if (loadedImage != nullptr) {
+		
 		std::string cpuBinarizedFilename = ImageFileUtil::addPrefix(fullFilePath, "cpu_binarized_");
 
 		PngImage* cpuBinarizedImage = OtsuBinarizer::binarize(loadedImage);
 
 		ImageFileUtil::savePngFile(cpuBinarizedImage, cpuBinarizedFilename.c_str());
 
-		delete cpuBinarizedImage;
+		delete cpuBinarizedImage; 
 	
 		CudaOtsuBinarizer* cudaBinarizer = new CudaOtsuBinarizer(threadsPerBlock, numBlocks);
 
@@ -51,7 +53,8 @@ int main(int argc, char **argv)
 
 		ImageFileUtil::savePngFile(gpuBinarizedImage, gpuBinarizedFilename.c_str());
 
-		delete gpuBinarizedImage;
+		delete gpuBinarizedImage; 
+		delete cudaBinarizer;
 
 		SMCudaOtsuBinarizer* smCudaBinarizer = new SMCudaOtsuBinarizer(threadsPerBlock, numBlocks);
 
@@ -62,10 +65,21 @@ int main(int argc, char **argv)
 		ImageFileUtil::savePngFile(sharedMemoryGpuBinarizedImage, smGpuBinarizedFilename.c_str());
 
 		delete sharedMemoryGpuBinarizedImage;
+		delete smCudaBinarizer;
+
+		MonoCudaOtsuBinarizer* monoCudaBinarizer = new MonoCudaOtsuBinarizer(threadsPerBlock);
+
+		PngImage* monoKernelGpuBinarizedImage = monoCudaBinarizer->binarize(loadedImage);
+
+		std::string monoKernelGpuBinarizedFilename = ImageFileUtil::addPrefix(fullFilePath, "gpu_mono_binarized_");
+
+		ImageFileUtil::savePngFile(monoKernelGpuBinarizedImage, monoKernelGpuBinarizedFilename.c_str());
+
+		delete monoKernelGpuBinarizedImage;
+		delete monoCudaBinarizer;
 	}
 
 	delete loadedImage;
 
-	system("pause");
 	return 0;
 }
