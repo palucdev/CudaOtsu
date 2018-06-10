@@ -43,6 +43,7 @@ bool CudaUtil::setGpu(int deviceIndex)
 		cudaDeviceProp deviceProperties;
 		cudaGetDeviceProperties(&deviceProperties, deviceIndex);
 		printf("Selected GPU: (%d) - %s\n", deviceIndex, deviceProperties.name);
+		printf("Compute Capability: %d.%d\n", deviceProperties.major, deviceProperties.minor);
 		cudaSetDevice(deviceIndex);
 		return true;
 	} else {
