@@ -25,8 +25,8 @@ int main(int argc, char **argv)
 	if (argc > 1) {
 		fullFilePath = argv[1];
 		if (argc > 3) {
-			threadsPerBlock =  (int)argv[2];
-			numBlocks = (int)argv[3];
+			threadsPerBlock =  std::atoi(argv[2]);
+			numBlocks = std::atoi(argv[3]);
 		} else {
 			threadsPerBlock = 512;
 			numBlocks = 512;

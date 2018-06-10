@@ -9,5 +9,5 @@ public:
 	virtual ~SMCudaOtsuBinarizer();
 protected:
 	unsigned char cudaFindThreshold(double* histogram, long int totalPixels) override;
-	double* SMCudaOtsuBinarizer::cudaCalculateHistogram(unsigned char* rawPixels, long totalPixels) override;
+	double* cudaCalculateHistogram(unsigned char* rawPixels, long totalPixels) override;
 };

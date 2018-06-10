@@ -9,7 +9,7 @@ build:
 	nvcc -x cu ${SOURCE_FILES} --std=c++11 -lineinfo -o ${BUILD_DIR}/${EXEC_FILE}
 
 run:
-	./${BUILD_DIR}/${EXEC_FILE}
+	./${BUILD_DIR}/${EXEC_FILE} $(file) $(threads) $(blocks)
 
 clean:
 	rm -rf ${BUILD_DIR}

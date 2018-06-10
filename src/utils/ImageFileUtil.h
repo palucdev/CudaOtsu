@@ -15,6 +15,6 @@ private:
 	static std::vector<std::string> splitString(std::string stringToSplit, const char delimiter);
 	static std::string joinString(std::vector<std::string> strings, const char delimiter = '\0');
 	static bool fileExists(const char * fileName);
-	static const char getOsPathDelimiter();
+	static char getOsPathDelimiter();
 };
 

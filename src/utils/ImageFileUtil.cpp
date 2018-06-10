@@ -86,7 +86,7 @@ bool ImageFileUtil::fileExists(const char *fileName)
 	return infile.good();
 }
 
-const char ImageFileUtil::getOsPathDelimiter() {
+char ImageFileUtil::getOsPathDelimiter() {
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
 	return '\\';
 #endif
