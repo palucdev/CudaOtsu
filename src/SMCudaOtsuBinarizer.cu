@@ -75,9 +75,10 @@ __global__ void smKernelComputeClassVariances(double* histogram, double allProba
 	betweenClassVariance[id] = firstClassProbability * secondClassProbability * pow((firstClassMean - secondClassMean), 2);
 }
 
-SMCudaOtsuBinarizer::SMCudaOtsuBinarizer(int threadsPerBlock, int numBlocks) : CudaOtsuBinarizer(threadsPerBlock, numBlocks, "GPU - Shared Memory") {
+SMCudaOtsuBinarizer::SMCudaOtsuBinarizer(int threadsPerBlock, int numBlocks, bool drawHistogram) : CudaOtsuBinarizer(threadsPerBlock, numBlocks, drawHistogram, "GPU - Shared Memory") {
 	this->threadsPerBlock_ = threadsPerBlock;
 	this->numBlocks_ = numBlocks;
+	this->drawHistogram_ = drawHistogram;
 }
 
 SMCudaOtsuBinarizer::~SMCudaOtsuBinarizer() {}

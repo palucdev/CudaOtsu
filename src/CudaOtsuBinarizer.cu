@@ -56,11 +56,12 @@ __global__ void kernelBinarize(unsigned char* rawPixels, long totalPixels, long 
 	}
 }
 
-CudaOtsuBinarizer::CudaOtsuBinarizer(int threadsPerBlock, int numBlocks, const char* TAG) {
+CudaOtsuBinarizer::CudaOtsuBinarizer(int threadsPerBlock, int numBlocks, bool drawHistogram, const char* TAG) {
 	this->threadsPerBlock_ = threadsPerBlock;
 	this->numBlocks_ = numBlocks;
 	this->executionTime_ = 0;
 
+	this->drawHistogram_ = drawHistogram;
 	this->TAG = TAG;
 }
 
@@ -72,7 +73,10 @@ PngImage* CudaOtsuBinarizer::binarize(PngImage * imageToBinarize)
 
 	double* histogram = cudaCalculateHistogram(imageToBinarize->getRawPixelData().data(), totalImagePixels);
 	cudaDeviceSynchronize();
-	showHistogram(histogram);
+	
+	if (this->drawHistogram_) {
+		showHistogram(histogram);
+	}
 
 	unsigned char threshold;
 	threshold = cudaFindThreshold(histogram, totalImagePixels);

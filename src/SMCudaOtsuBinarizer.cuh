@@ -5,7 +5,7 @@
 class SMCudaOtsuBinarizer : public CudaOtsuBinarizer
 {
 public:
-	SMCudaOtsuBinarizer(int threadsPerBlock, int numBlocks);
+	SMCudaOtsuBinarizer(int threadsPerBlock, int numBlocks, bool drawHistogram);
 	virtual ~SMCudaOtsuBinarizer();
 protected:
 	unsigned char cudaFindThreshold(double* histogram, long int totalPixels) override;

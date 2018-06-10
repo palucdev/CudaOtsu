@@ -21,12 +21,17 @@ int main(int argc, char **argv)
 	std::string fullFilePath;
 	int threadsPerBlock;
 	int numBlocks;
+	bool drawHistograms = false;
 
 	if (argc > 1) {
 		fullFilePath = argv[1];
 		if (argc > 3) {
 			threadsPerBlock =  std::atoi(argv[2]);
 			numBlocks = std::atoi(argv[3]);
+			if (argc > 4) {
+				std::string flag(argv[4]);
+				drawHistograms = flag == "--hist" ? true : false;
+			}
 		} else {
 			threadsPerBlock = 512;
 			numBlocks = 512;
@@ -45,7 +50,7 @@ int main(int argc, char **argv)
 
 		delete cpuBinarizedImage; 
 	
-		CudaOtsuBinarizer* cudaBinarizer = new CudaOtsuBinarizer(threadsPerBlock, numBlocks);
+		CudaOtsuBinarizer* cudaBinarizer = new CudaOtsuBinarizer(threadsPerBlock, numBlocks, drawHistograms);
 
 		PngImage* gpuBinarizedImage = cudaBinarizer->binarize(loadedImage);
 
@@ -56,7 +61,7 @@ int main(int argc, char **argv)
 		delete gpuBinarizedImage; 
 		delete cudaBinarizer;
 
-		SMCudaOtsuBinarizer* smCudaBinarizer = new SMCudaOtsuBinarizer(threadsPerBlock, numBlocks);
+		SMCudaOtsuBinarizer* smCudaBinarizer = new SMCudaOtsuBinarizer(threadsPerBlock, numBlocks, drawHistograms);
 
 		PngImage* sharedMemoryGpuBinarizedImage = smCudaBinarizer->binarize(loadedImage);
 
@@ -67,7 +72,7 @@ int main(int argc, char **argv)
 		delete sharedMemoryGpuBinarizedImage;
 		delete smCudaBinarizer;
 
-		MonoCudaOtsuBinarizer* monoCudaBinarizer = new MonoCudaOtsuBinarizer(threadsPerBlock);
+		MonoCudaOtsuBinarizer* monoCudaBinarizer = new MonoCudaOtsuBinarizer(threadsPerBlock, drawHistograms);
 
 		PngImage* monoKernelGpuBinarizedImage = monoCudaBinarizer->binarize(loadedImage);
 

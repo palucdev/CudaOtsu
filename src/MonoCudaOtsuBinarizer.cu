@@ -93,10 +93,11 @@ __global__ void kernelBinarize(unsigned int* histogram, unsigned char* rawPixels
 	}
 }
 
-MonoCudaOtsuBinarizer::MonoCudaOtsuBinarizer(int threadsPerBlock, const char* TAG) {
+MonoCudaOtsuBinarizer::MonoCudaOtsuBinarizer(int threadsPerBlock, bool drawHistogram, const char* TAG) {
 	this->threadsPerBlock_ = threadsPerBlock;
 	this->executionTime_ = 0;
 
+	this->showHistogram_ = drawHistogram;
 	this->TAG = TAG;
 }
 
@@ -191,9 +192,11 @@ unsigned char* MonoCudaOtsuBinarizer::cudaBinarize(unsigned char * rawPixels, lo
 		pixelsSum += hostHistogram[v];
 	}
 
-	printf("\n\t[%s] Histogram pixels: %d \n", this->TAG, pixelsSum);
-	showHistogram(normalizedHistogram);
-
+	if (this->showHistogram_) {
+		printf("\n\t[%s] Histogram pixels: %d \n", this->TAG, pixelsSum);
+		showHistogram(normalizedHistogram);
+	}
+	
 	cudaFree(deviceHistogram);
 	cudaFree(deviceBetweenClassVariances);
 	cudaFree(deviceAllProbabilitySum);
@@ -205,7 +208,6 @@ unsigned char* MonoCudaOtsuBinarizer::cudaBinarize(unsigned char * rawPixels, lo
 	float milliseconds = 0;
 	cudaEventElapsedTime(&milliseconds, start, stop);
 	this->executionTime_ += milliseconds;
-	printf("\n\t[%s] Total calculation time: %.6f milliseconds \n", this->TAG, this->executionTime_);
 
 	cudaFree(deviceRawPixels);
 
