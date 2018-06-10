@@ -30,4 +30,5 @@ Project is focused on implementing Otsu's method as CUDA kernels to test how wel
 - [ ] Concurrent CPU method implementation for benchmarking (openMP)
 - [ ] Memory optimization
 - [ ] Simple (cross-platform) GUI 
+- [ ] Cuda GPU selection error handling
 - [ ] Research and compare different CUDA optimization mechanisms 

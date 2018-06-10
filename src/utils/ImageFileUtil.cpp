@@ -2,7 +2,6 @@
 #include "../libs/lodepng.h"
 #include <iostream>
 #include <sstream>
-#include <vector>
 #include <fstream>
 
 ImageFileUtil::ImageFileUtil() {}

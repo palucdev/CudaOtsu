@@ -9,34 +9,70 @@
 
 #include "libs/lodepng.h"
 #include "utils/ImageFileUtil.h"
+#include "utils/CudaUtil.h"
 #include "model/PngImage.h"
 #include "OtsuBinarizer.h"
 #include "CudaOtsuBinarizer.cuh"
 #include "SMCudaOtsuBinarizer.cuh"
 #include "MonoCudaOtsuBinarizer.cuh"
 
+void printHelp() {
+	std::string helpMessage = "";
+	helpMessage.append("Help:\n");
+	helpMessage.append("<program> filePath cudaThreadsNumber cudaBlocksNumber [optional flags]\n");
+	helpMessage.append("\tFlags:\n");
+	helpMessage.append("\t\t -h show histogram values for each binarizer run\n");
+	helpMessage.append("\t\t -d <deviceName> choose GPU device by given name (defaults to 0)\n");
+
+	printf(helpMessage.c_str());
+
+}
+
 // CudaOtsu filepath/dirpath threadsPerBlock numBlocks
 int main(int argc, char **argv)
 {
+	static const int DEFAULT_THREADS_NUMBER = 512;
+	static const int DEFAULT_BLOCKS_NUMBER = 512;
+
 	std::string fullFilePath;
 	int threadsPerBlock;
 	int numBlocks;
 	bool drawHistograms = false;
+	int cudaDeviceId;
 
-	if (argc > 1) {
+	if (argc <= 3) {
+		printHelp();
+		CudaUtil::getAvailableGpuNames();
+		return -1;
+	}
+	else {
 		fullFilePath = argv[1];
-		if (argc > 3) {
-			threadsPerBlock =  std::atoi(argv[2]);
-			numBlocks = std::atoi(argv[3]);
-			if (argc > 4) {
-				std::string flag(argv[4]);
-				drawHistograms = flag == "--hist" ? true : false;
+		threadsPerBlock = std::atoi(argv[2]) > 0 ? std::atoi(argv[2]) : DEFAULT_THREADS_NUMBER;
+		numBlocks = std::atoi(argv[3]) > 0 ? std::atoi(argv[3]) : DEFAULT_BLOCKS_NUMBER;
+
+		for (int argumentIndex = 4; argumentIndex < argc; argumentIndex++) {
+			std::string flag(argv[argumentIndex]);
+
+			if (flag == "-h")
+				drawHistograms = true;
+
+			if (flag == "-d") {
+				int nextArgument = argumentIndex + 1;
+				if (nextArgument < argc) {
+					cudaDeviceId = std::atoi(argv[nextArgument]);
+
+					bool gpuSetSuccess = CudaUtil::setGpu(cudaDeviceId);
+
+					if (!gpuSetSuccess) {
+						CudaUtil::getAvailableGpuNames();
+						return -1;
+					}
+
+					argumentIndex = nextArgument;
+				}
 			}
-		} else {
-			threadsPerBlock = 512;
-			numBlocks = 512;
 		}
-	} 
+	}
 	
 	PngImage* loadedImage = ImageFileUtil::loadPngFile(fullFilePath.c_str());
 
