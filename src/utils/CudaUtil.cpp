@@ -35,6 +35,22 @@ void CudaUtil::getAvailableGpuNames()
 	}
 }
 
+std::string CudaUtil::getDeviceName(int deviceId)
+{
+	char* deviceName;
+	int devicesCount;
+	cudaGetDeviceCount(&devicesCount);
+	if (deviceId < devicesCount) {
+		cudaDeviceProp deviceProperties;
+		cudaGetDeviceProperties(&deviceProperties, deviceId);
+		deviceName = deviceProperties.name;
+	} else {
+		deviceName = "-";
+	}
+
+	return std::string(deviceName);
+}
+
 bool CudaUtil::setGpu(int deviceIndex)
 {
 	int devicesCount;

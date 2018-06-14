@@ -35,7 +35,7 @@ void runCpuImplementation(std::string fullFilePath, PngImage* loadedImage) {
 	delete cpuBinarizedImage;
 }
 
-void runGpuImplementation(std::string fullFilePath, PngImage* loadedImage, int threadsPerBlock, int numBlocks, bool drawHistograms) {
+std::string runGpuImplementation(std::string fullFilePath, PngImage* loadedImage, int threadsPerBlock, int numBlocks, bool drawHistograms) {
 
 	CudaOtsuBinarizer* cudaBinarizer = new CudaOtsuBinarizer(threadsPerBlock, numBlocks, drawHistograms);
 
@@ -45,11 +45,15 @@ void runGpuImplementation(std::string fullFilePath, PngImage* loadedImage, int t
 
 	ImageFileUtil::savePngFile(gpuBinarizedImage, gpuBinarizedFilename.c_str());
 
+	std::string csvTimesLog = cudaBinarizer->getBinarizerExecutionInfo(fullFilePath);
+
 	delete gpuBinarizedImage;
 	delete cudaBinarizer;
+
+	return csvTimesLog;
 }
 
-void runGpuSharedMemoryImplementation(std::string fullFilePath, PngImage* loadedImage, int threadsPerBlock, int numBlocks, bool drawHistograms) {
+std::string runGpuSharedMemoryImplementation(std::string fullFilePath, PngImage* loadedImage, int threadsPerBlock, int numBlocks, bool drawHistograms) {
 
 	SMCudaOtsuBinarizer* smCudaBinarizer = new SMCudaOtsuBinarizer(threadsPerBlock, numBlocks, drawHistograms);
 
@@ -59,8 +63,12 @@ void runGpuSharedMemoryImplementation(std::string fullFilePath, PngImage* loaded
 
 	ImageFileUtil::savePngFile(sharedMemoryGpuBinarizedImage, smGpuBinarizedFilename.c_str());
 
+	std::string csvTimesLog = smCudaBinarizer->getBinarizerExecutionInfo(fullFilePath);
+
 	delete sharedMemoryGpuBinarizedImage;
 	delete smCudaBinarizer;
+
+	return csvTimesLog;
 }
 
 void runGpuMonoKernelImplementation(std::string fullFilePath, PngImage* loadedImage, int threadsPerBlock, int numBlocks, bool drawHistograms) {
@@ -105,6 +113,9 @@ int main(int argc, char **argv)
 	int numBlocks;
 	bool drawHistograms = false;
 	int cudaDeviceId;
+
+	std::vector<std::string> binarizerTimestamps;
+	const char* timestampsFile = "times.csv";
 
 	// Default CudaOtsuBinarizer usage
 	bool algChosenToRun[5] = { false, true, false, false, false };
@@ -180,11 +191,13 @@ int main(int argc, char **argv)
 		}
 
 		if (algChosenToRun[GPU] || algChosenToRun[ALL]) {
-			runGpuImplementation(fullFilePath, loadedImage, threadsPerBlock, numBlocks, drawHistograms);
+			std::string csvTimeLog = runGpuImplementation(fullFilePath, loadedImage, threadsPerBlock, numBlocks, drawHistograms);
+			binarizerTimestamps.push_back(csvTimeLog);
 		}
 
 		if (algChosenToRun[GPU_SharedMemory] || algChosenToRun[ALL]) {
-			runGpuSharedMemoryImplementation(fullFilePath, loadedImage, threadsPerBlock, numBlocks, drawHistograms);
+			std::string csvTimeLog = runGpuSharedMemoryImplementation(fullFilePath, loadedImage, threadsPerBlock, numBlocks, drawHistograms);
+			binarizerTimestamps.push_back(csvTimeLog);
 		}
 
 		if (algChosenToRun[GPU_MonoKernel] || algChosenToRun[ALL]) {
@@ -193,6 +206,8 @@ int main(int argc, char **argv)
 	}
 
 	delete loadedImage;
+
+	ImageFileUtil::saveCsvFile(binarizerTimestamps, timestampsFile);
 
 	return 0;
 }

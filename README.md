@@ -1,5 +1,5 @@
 # CudaOtsu
-Otsu's method thresholding and image binarization on GPU in CUDA in C++.
+Otsu's method thresholding and image binarization on GPU using CUDA in C++.
 
 ## Otsu's Method
 Simple and one of the most popular image thresholding method used in computer vision problems. Algorithm helps to find optimal threshold value for greyscale image to be then used in image binarization. As binarized images are main data type for problems such as OCR, Otsu's method is used as a part of pre-processing pipelines for computer vision problems.
@@ -25,6 +25,35 @@ Project is focused on implementing Otsu's method as CUDA kernels to test how wel
 - Basic CUDA shared memory usage (no huge speed boost here, Otsu's algorithm gains very little from cache)
 - Makefile for more multiplatform approach
 - Extendable Binarizers architecture
+
+## How to run project
+- Build project using makefile build target or visual studio project build  
+```bash
+$> make clean
+$> make build
+```
+- Run it using makefile
+```bash
+$> make run 
+    file=<absolute_path_to_file>
+    threads=<cuda_threads_number>
+    blocks=<cuda_blocks_number>
+    device_id=<gpu_id> 
+    # default GPU indexed as 0, for more info use nvidia-smi tool
+```
+
+- or directly from executable (`.exe` in case of Windows OS)
+```bash
+$> ./cudaOtsu <absolute_path_to_file> <cuda_threads_number>  
+    <cuda_blocks_number> -d <gpu_id> [optional flags]
+    # Flags:
+    #   -h (show histogram values for each binarizer run)
+    #   --cpu (run CPU implementation)
+    #   --gpu (run basic GPU implementation)
+    #   --gpu-sm (run shared memory optimized GPU implementation)
+    #   --gpu-mono (run GPU version with singlekernel architecture on single GPU block)
+    #   --run-all (run all implemented versions of Otsu algorithm both CPU and GPU)
+```
 
 ## To do
 - [ ] Concurrent CPU method implementation for benchmarking (openMP)

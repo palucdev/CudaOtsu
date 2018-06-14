@@ -59,13 +59,15 @@ __global__ void kernelBinarize(unsigned char* rawPixels, long totalPixels, long 
 CudaOtsuBinarizer::CudaOtsuBinarizer(int threadsPerBlock, int numBlocks, bool drawHistogram, const char* TAG) {
 	this->threadsPerBlock_ = threadsPerBlock;
 	this->numBlocks_ = numBlocks;
-	this->executionTime_ = 0;
+	this->binarizerTimestamp_ = new ExecutionTimestamp();
 
 	this->drawHistogram_ = drawHistogram;
 	this->TAG = TAG;
 }
 
-CudaOtsuBinarizer::~CudaOtsuBinarizer() {}
+CudaOtsuBinarizer::~CudaOtsuBinarizer() {
+	delete this->binarizerTimestamp_;
+}
 
 PngImage* CudaOtsuBinarizer::binarize(PngImage * imageToBinarize)
 {
@@ -92,7 +94,7 @@ PngImage* CudaOtsuBinarizer::binarize(PngImage * imageToBinarize)
 
 	delete binarizedRawPixels;
 
-	printf("\n\t[%s] Total calculation time: %.6f milliseconds \n", this->TAG, this->executionTime_);
+	printf("\n\t[%s] Total calculation time: %.6f milliseconds \n", this->TAG, binarizerTimestamp_->getExecutionTime());
 
 	return new PngImage(
 		imageToBinarize->getFilename(),
@@ -100,6 +102,11 @@ PngImage* CudaOtsuBinarizer::binarize(PngImage * imageToBinarize)
 		imageToBinarize->getHeight(),
 		binarizedVector
 	);
+}
+
+std::string CudaOtsuBinarizer::getBinarizerExecutionInfo(std::string fileName)
+{
+	return binarizerTimestamp_->toCommaSeparatedRow(fileName, std::string(this->TAG));
 }
 
 void CudaOtsuBinarizer::showHistogram(double* histogram) {
@@ -143,7 +150,7 @@ double* CudaOtsuBinarizer::cudaCalculateHistogram(unsigned char* rawPixels, long
 	float milliseconds = 0;
 	cudaEventElapsedTime(&milliseconds, start, stop);
 	printf("\n\t[%s] Histogram calculated in %.6f milliseconds \n", this->TAG, milliseconds);
-	this->executionTime_ += milliseconds;
+	binarizerTimestamp_->histogramBuildingTime += milliseconds;
 
 	cudaFree(deviceHistogram);
 	cudaFree(deviceRawPixels);
@@ -195,7 +202,7 @@ unsigned char CudaOtsuBinarizer::cudaFindThreshold(double* histogram, long int t
 	float milliseconds = 0;
 	cudaEventElapsedTime(&milliseconds, start, stop);
 	printf("\n\t[%s] Threshold calculated in %.6f milliseconds \n", this->TAG, milliseconds);
-	this->executionTime_ += milliseconds;
+	binarizerTimestamp_->thresholdFindingTime += milliseconds;
 
 	cudaFree(deviceHistogram);
 	cudaFree(deviceBetweenClassVariances);
@@ -237,7 +244,7 @@ unsigned char* CudaOtsuBinarizer::cudaBinarize(unsigned char * rawPixels, long t
 	float milliseconds = 0;
 	cudaEventElapsedTime(&milliseconds, start, stop);
 	printf("\n\t[%s] Binarized in %.6f milliseconds \n", this->TAG, milliseconds);
-	this->executionTime_ += milliseconds;
+	binarizerTimestamp_->binarizationTime += milliseconds;
 
 	cudaFree(deviceRawPixels);
 

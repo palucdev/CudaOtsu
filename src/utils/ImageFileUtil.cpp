@@ -79,6 +79,18 @@ std::string ImageFileUtil::joinString(std::vector<std::string> strings, const ch
 	return resultString;
 }
 
+void ImageFileUtil::saveCsvFile(std::vector<std::string> rows, const char * filename)
+{
+	std::ofstream csvFile;
+	csvFile.open(filename, std::ofstream::app);
+
+	for (std::vector<std::string>::size_type i = 0; i != rows.size(); i++) {
+		csvFile << rows[i] + "\n";
+	}
+
+	csvFile.close();
+}
+
 bool ImageFileUtil::fileExists(const char *fileName)
 {
 	std::ifstream infile(fileName);

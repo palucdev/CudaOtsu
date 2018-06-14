@@ -1,16 +1,18 @@
-#include "model/PngImage.h" 
+#include "model/PngImage.h"
+#include "model/ExecutionTimestamp.h"
 
 #pragma once
 class CudaOtsuBinarizer
 {
 public:
 	PngImage* binarize(PngImage* imageToBinarize);
+	std::string getBinarizerExecutionInfo(std::string fileName);
 	CudaOtsuBinarizer(int threadsPerBlock, int numBlocks, bool drawHistogram, const char* TAG = "GPU");
-	~CudaOtsuBinarizer();
+	virtual ~CudaOtsuBinarizer();
 protected:
 	int threadsPerBlock_;
 	int numBlocks_;
-	float executionTime_;
+	ExecutionTimestamp* binarizerTimestamp_;
 	bool drawHistogram_;
 	const char* TAG;
 	virtual void showHistogram(double* histogram);
