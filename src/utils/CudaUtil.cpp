@@ -51,6 +51,14 @@ std::string CudaUtil::getDeviceName(int deviceId)
 	return std::string(deviceName);
 }
 
+int CudaUtil::getCurrentDevice()
+{
+	int deviceId;
+	cudaGetDevice(&deviceId);
+
+	return deviceId;
+}
+
 bool CudaUtil::setGpu(int deviceIndex)
 {
 	int devicesCount;

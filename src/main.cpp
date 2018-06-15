@@ -24,6 +24,16 @@ enum MethodImplementations : unsigned int {
 	ALL
 };
 
+
+std::string getConfigurationInfo(int threadsPerBlock, int numBlocks) {
+	std::vector<std::string> params;
+	params.push_back(std::to_string(threadsPerBlock));
+	params.push_back(std::to_string(numBlocks));
+	params.push_back(CudaUtil::getDeviceName(CudaUtil::getCurrentDevice()));
+
+	return ImageFileUtil::joinString(params, ',');
+}
+
 void runCpuImplementation(std::string fullFilePath, PngImage* loadedImage) {
 
 	std::string cpuBinarizedFilename = ImageFileUtil::addPrefix(fullFilePath, "cpu_binarized_");
@@ -46,11 +56,12 @@ std::string runGpuImplementation(std::string fullFilePath, PngImage* loadedImage
 	ImageFileUtil::savePngFile(gpuBinarizedImage, gpuBinarizedFilename.c_str());
 
 	std::string csvTimesLog = cudaBinarizer->getBinarizerExecutionInfo(fullFilePath);
+	std::string configLog = getConfigurationInfo(threadsPerBlock, numBlocks);
 
 	delete gpuBinarizedImage;
 	delete cudaBinarizer;
 
-	return csvTimesLog;
+	return csvTimesLog + "," + configLog;
 }
 
 std::string runGpuSharedMemoryImplementation(std::string fullFilePath, PngImage* loadedImage, int threadsPerBlock, int numBlocks, bool drawHistograms) {
@@ -64,11 +75,12 @@ std::string runGpuSharedMemoryImplementation(std::string fullFilePath, PngImage*
 	ImageFileUtil::savePngFile(sharedMemoryGpuBinarizedImage, smGpuBinarizedFilename.c_str());
 
 	std::string csvTimesLog = smCudaBinarizer->getBinarizerExecutionInfo(fullFilePath);
-
+	std::string configLog = getConfigurationInfo(threadsPerBlock, numBlocks);
+	
 	delete sharedMemoryGpuBinarizedImage;
 	delete smCudaBinarizer;
 
-	return csvTimesLog;
+	return csvTimesLog + "," + configLog;
 }
 
 void runGpuMonoKernelImplementation(std::string fullFilePath, PngImage* loadedImage, int threadsPerBlock, int numBlocks, bool drawHistograms) {
