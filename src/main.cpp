@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <iostream>
+#include <time.h>
+#include <omp.h>
 
 // Memory leaks checking
 // #include "vld.h"
@@ -12,12 +14,14 @@
 #include "utils/CudaUtil.h"
 #include "model/PngImage.h"
 #include "OtsuBinarizer.h"
+#include "OtsuOpenMPBinarizer.h"
 #include "CudaOtsuBinarizer.cuh"
 #include "SMCudaOtsuBinarizer.cuh"
 #include "MonoCudaOtsuBinarizer.cuh"
 
 enum MethodImplementations : unsigned int {
 	CPU,
+	CPU_OpenMP,
 	GPU,
 	GPU_SharedMemory,
 	GPU_MonoKernel,
@@ -36,9 +40,38 @@ std::string getConfigurationInfo(int threadsPerBlock, int numBlocks) {
 
 void runCpuImplementation(std::string fullFilePath, PngImage* loadedImage) {
 
+	clock_t time;
+	time = clock();
+
 	std::string cpuBinarizedFilename = ImageFileUtil::addPrefix(fullFilePath, "cpu_binarized_");
 
 	PngImage* cpuBinarizedImage = OtsuBinarizer::binarize(loadedImage);
+
+	time = clock() - time;
+
+	printf("\nCPU binarization took %f seconds\n", ((double)time / CLOCKS_PER_SEC));
+
+	ImageFileUtil::savePngFile(cpuBinarizedImage, cpuBinarizedFilename.c_str());
+
+	delete cpuBinarizedImage;
+}
+
+void runCpuOpenmpImplementation(std::string fullFilePath, PngImage* loadedImage, int cpuThreads) {
+
+	printf("\nSetting OpenMP threads num to %d threads\n", cpuThreads);
+	omp_set_dynamic(0);
+	omp_set_num_threads(cpuThreads);
+
+	clock_t time;
+	time = clock();
+
+	std::string cpuBinarizedFilename = ImageFileUtil::addPrefix(fullFilePath, "cpu-openmp_binarized_");
+
+	PngImage* cpuBinarizedImage = OtsuOpenMPBinarizer::binarize(loadedImage, cpuThreads);
+
+	time = clock() - time;
+
+	printf("\nCPU-OpenMP binarization taken %f seconds\n", ((double)time / CLOCKS_PER_SEC));
 
 	ImageFileUtil::savePngFile(cpuBinarizedImage, cpuBinarizedFilename.c_str());
 
@@ -105,6 +138,7 @@ void printHelp() {
 	helpMessage.append("\t\t -h show histogram values for each binarizer run\n");
 	helpMessage.append("\t\t -d <deviceName> choose GPU device by given name (defaults to 0)\n");
 	helpMessage.append("\t\t --cpu run CPU version of algorithm\n");
+	helpMessage.append("\t\t --cpu-openmp run CPU with OpenMP version of algorithm\n");
 	helpMessage.append("\t\t --gpu run GPU reference version of algorithm\n");
 	helpMessage.append("\t\t --gpu-sm run GPU version of algorithm with shared memory optimization\n");
 	helpMessage.append("\t\t --gpu-mono run GPU version of algorithm with single kernel arch on single block\n");
@@ -119,10 +153,10 @@ int main(int argc, char **argv)
 {
 	static const int DEFAULT_THREADS_NUMBER = 512;
 	static const int DEFAULT_BLOCKS_NUMBER = 512;
+	static const int DEFAULT_CPU_THREADS = 16;
 
 	std::string fullFilePath;
-	int threadsPerBlock;
-	int numBlocks;
+	int threadsPerBlock, numBlocks, cpuThreads;
 	bool drawHistograms = false;
 	int cudaDeviceId;
 
@@ -130,7 +164,7 @@ int main(int argc, char **argv)
 	const char* timestampsFile = "times.csv";
 
 	// Default CudaOtsuBinarizer usage
-	bool algChosenToRun[5] = { false, true, false, false, false };
+	bool algChosenToRun[6] = { false, true, false, false, false, false };
 
 	if (argc <= 3) {
 		printHelp();
@@ -141,8 +175,9 @@ int main(int argc, char **argv)
 		fullFilePath = argv[1];
 		threadsPerBlock = std::atoi(argv[2]) > 0 ? std::atoi(argv[2]) : DEFAULT_THREADS_NUMBER;
 		numBlocks = std::atoi(argv[3]) > 0 ? std::atoi(argv[3]) : DEFAULT_BLOCKS_NUMBER;
+		cpuThreads = std::atoi(argv[4]) > 0 ? std::atoi(argv[4]) : DEFAULT_CPU_THREADS;
 
-		for (int argumentIndex = 4; argumentIndex < argc; argumentIndex++) {
+		for (int argumentIndex = 5; argumentIndex < argc; argumentIndex++) {
 			std::string flag(argv[argumentIndex]);
 
 			if (flag == "-h") {
@@ -169,6 +204,11 @@ int main(int argc, char **argv)
 
 			if (flag == "--cpu") {
 				algChosenToRun[CPU] = true;
+				continue;
+			}
+
+			if (flag == "--cpu-openmp") {
+				algChosenToRun[CPU_OpenMP] = true;
 				continue;
 			}
 				
@@ -200,6 +240,10 @@ int main(int argc, char **argv)
 
 		if (algChosenToRun[CPU] || algChosenToRun[ALL]) {
 			runCpuImplementation(fullFilePath, loadedImage);
+		}
+
+		if (algChosenToRun[CPU_OpenMP] || algChosenToRun[ALL]) {
+			runCpuOpenmpImplementation(fullFilePath, loadedImage, cpuThreads);
 		}
 
 		if (algChosenToRun[GPU] || algChosenToRun[ALL]) {
