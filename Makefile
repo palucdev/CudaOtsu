@@ -3,9 +3,19 @@ BUILD_DIR = build
 EXEC_FILE = CudaOtsu
 DEFAULT_VALUE_FLAG = -1
 
-SOURCE_FILES := $(shell find $(SOURCE_DIR) -name '*.cpp' -o -name '*.cu')
+SOURCE_FILES := 
+ifeq ($(OS), Windows_NT)
+	SOURCE_FILES = $(shell find $(SOURCE_DIR) -name *.cpp -o -name *.cu)
+else 
+	ifeq ($(UNAME_S), Linux)
+		SOURCE_FILES = $(shell find $(SOURCE_DIR) -name '*.cpp' -o -name '*.cu')
+	else
+		SOURCE_FILES = None
+	endif
+endif
 
 list_sources:
+	@echo "Source files:"
 	@echo ${SOURCE_FILES}
 
 build:
