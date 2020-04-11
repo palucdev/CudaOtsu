@@ -32,6 +32,8 @@ Project is focused on implementing Otsu's method as CUDA kernels to test how wel
 $> make clean
 $> make build
 ```
+If you have any errors during `make build` command, please check if the SOURCE_FILES variable (in Makefile) is set correctly according to your OS!
+
 - Run it using makefile
 ```bash
 $> make run 
