@@ -7,6 +7,7 @@ SOURCE_FILES :=
 ifeq ($(OS), Windows_NT)
 	SOURCE_FILES = $(shell find $(SOURCE_DIR) -name *.cpp -o -name *.cu)
 else 
+	UNAME_S = $(shell uname -s)
 	ifeq ($(UNAME_S), Linux)
 		SOURCE_FILES = $(shell find $(SOURCE_DIR) -name '*.cpp' -o -name '*.cu')
 	else
