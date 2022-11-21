@@ -21,7 +21,7 @@ list_sources:
 
 build:
 	mkdir -p ${BUILD_DIR}
-	nvcc -x cu ${SOURCE_FILES} --std=c++11 -lineinfo -o ${BUILD_DIR}/${EXEC_FILE} -Xcompiler -openmp
+	nvcc -x cu ${SOURCE_FILES} --std=c++11 -lineinfo -o ${BUILD_DIR}/${EXEC_FILE} -Xcompiler -fopenmp
 
 run:
 	./${BUILD_DIR}/${EXEC_FILE} $(file) $(threads) $(blocks) -d $(device_id)
