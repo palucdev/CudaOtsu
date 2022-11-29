@@ -42,6 +42,11 @@ bool RunConfiguration::hasLoadedImage()
 	return this->loadedImage != nullptr;
 }
 
+bool RunConfiguration::shouldRunAlgorithm(unsigned int algorithm)
+{
+	return this->algChosenToRun[algorithm] || this->algChosenToRun[ALL];
+}
+
 void RunConfiguration::print()
 {
 	printf("\nRun configuration:\n");

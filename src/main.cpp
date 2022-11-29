@@ -10,6 +10,7 @@
 // #include "vld.h"
 
 #include "libs/lodepng.h"
+#include "core/AppRunner.h"
 #include "utils/ImageFileUtil.h"
 #include "utils/CudaUtil.h"
 #include "utils/RunConfigurationBuilder.h"
@@ -21,16 +22,6 @@
 #include "SMCudaOtsuBinarizer.cuh"
 #include "MonoCudaOtsuBinarizer.cuh"
 
-enum MethodImplementations : unsigned int
-{
-	CPU,
-	CPU_OpenMP,
-	GPU,
-	GPU_SharedMemory,
-	GPU_MonoKernel,
-	ALL
-};
-
 std::string getConfigurationInfo(int threadsPerBlock, int numBlocks)
 {
 	std::vector<std::string> params;
@@ -41,15 +32,15 @@ std::string getConfigurationInfo(int threadsPerBlock, int numBlocks)
 	return ImageFileUtil::joinString(params, ',');
 }
 
-void runCpuImplementation(RunConfiguration runConfig)
+void runCpuImplementation(RunConfiguration* runConfig)
 {
 
 	clock_t time;
 	time = clock();
 
-	std::string cpuBinarizedFilename = ImageFileUtil::addPrefix(runConfig.getFullFilePath(), "cpu_binarized_");
+	std::string cpuBinarizedFilename = ImageFileUtil::addPrefix(runConfig->getFullFilePath(), "cpu_binarized_");
 
-	PngImage *cpuBinarizedImage = OtsuBinarizer::binarize(runConfig.getLoadedImage());
+	PngImage *cpuBinarizedImage = OtsuBinarizer::binarize(runConfig->getLoadedImage());
 
 	time = clock() - time;
 
@@ -60,19 +51,19 @@ void runCpuImplementation(RunConfiguration runConfig)
 	delete cpuBinarizedImage;
 }
 
-void runCpuOpenmpImplementation(RunConfiguration runConfig)
+void runCpuOpenmpImplementation(RunConfiguration* runConfig)
 {
 
-	printf("\nSetting OpenMP threads num to %d threads\n", runConfig.getCpuThreads());
+	printf("\nSetting OpenMP threads num to %d threads\n", runConfig->getCpuThreads());
 	omp_set_dynamic(0);
-	omp_set_num_threads(runConfig.getCpuThreads());
+	omp_set_num_threads(runConfig->getCpuThreads());
 
 	clock_t time;
 	time = clock();
 
-	std::string cpuBinarizedFilename = ImageFileUtil::addPrefix(runConfig.getFullFilePath(), "cpu-openmp_binarized_");
+	std::string cpuBinarizedFilename = ImageFileUtil::addPrefix(runConfig->getFullFilePath(), "cpu-openmp_binarized_");
 
-	PngImage *cpuBinarizedImage = OtsuOpenMPBinarizer::binarize(runConfig.getLoadedImage(), runConfig.getCpuThreads());
+	PngImage *cpuBinarizedImage = OtsuOpenMPBinarizer::binarize(runConfig->getLoadedImage(), runConfig->getCpuThreads());
 
 	time = clock() - time;
 
@@ -83,24 +74,24 @@ void runCpuOpenmpImplementation(RunConfiguration runConfig)
 	delete cpuBinarizedImage;
 }
 
-std::string runGpuImplementation(RunConfiguration runConfig)
+std::string runGpuImplementation(RunConfiguration* runConfig)
 {
 
 	CudaOtsuBinarizer *cudaBinarizer = new CudaOtsuBinarizer(
-		runConfig.getThreadsPerBlock(),
-		runConfig.getNumberOfBlocks(),
-		runConfig.shouldDrawHistograms());
+		runConfig->getThreadsPerBlock(),
+		runConfig->getNumberOfBlocks(),
+		runConfig->shouldDrawHistograms());
 
-	PngImage *gpuBinarizedImage = cudaBinarizer->binarize(runConfig.getLoadedImage());
+	PngImage *gpuBinarizedImage = cudaBinarizer->binarize(runConfig->getLoadedImage());
 
-	std::string gpuBinarizedFilename = ImageFileUtil::addPrefix(runConfig.getFullFilePath(), "gpu_binarized_");
+	std::string gpuBinarizedFilename = ImageFileUtil::addPrefix(runConfig->getFullFilePath(), "gpu_binarized_");
 
 	ImageFileUtil::savePngFile(gpuBinarizedImage, gpuBinarizedFilename.c_str());
 
-	std::string csvTimesLog = cudaBinarizer->getBinarizerExecutionInfo(runConfig.getFullFilePath());
+	std::string csvTimesLog = cudaBinarizer->getBinarizerExecutionInfo(runConfig->getFullFilePath());
 	std::string configLog = getConfigurationInfo(
-		runConfig.getThreadsPerBlock(),
-		runConfig.getNumberOfBlocks());
+		runConfig->getThreadsPerBlock(),
+		runConfig->getNumberOfBlocks());
 
 	delete gpuBinarizedImage;
 	delete cudaBinarizer;
@@ -108,22 +99,22 @@ std::string runGpuImplementation(RunConfiguration runConfig)
 	return csvTimesLog + "," + configLog;
 }
 
-std::string runGpuSharedMemoryImplementation(RunConfiguration runConfig)
+std::string runGpuSharedMemoryImplementation(RunConfiguration* runConfig)
 {
 
 	SMCudaOtsuBinarizer *smCudaBinarizer = new SMCudaOtsuBinarizer(
-		runConfig.getThreadsPerBlock(),
-		runConfig.getNumberOfBlocks(),
-		runConfig.shouldDrawHistograms());
+		runConfig->getThreadsPerBlock(),
+		runConfig->getNumberOfBlocks(),
+		runConfig->shouldDrawHistograms());
 
-	PngImage *sharedMemoryGpuBinarizedImage = smCudaBinarizer->binarize(runConfig.getLoadedImage());
+	PngImage *sharedMemoryGpuBinarizedImage = smCudaBinarizer->binarize(runConfig->getLoadedImage());
 
-	std::string smGpuBinarizedFilename = ImageFileUtil::addPrefix(runConfig.getFullFilePath(), "gpu_shared_memory_binarized_");
+	std::string smGpuBinarizedFilename = ImageFileUtil::addPrefix(runConfig->getFullFilePath(), "gpu_shared_memory_binarized_");
 
 	ImageFileUtil::savePngFile(sharedMemoryGpuBinarizedImage, smGpuBinarizedFilename.c_str());
 
-	std::string csvTimesLog = smCudaBinarizer->getBinarizerExecutionInfo(runConfig.getFullFilePath());
-	std::string configLog = getConfigurationInfo(runConfig.getThreadsPerBlock(), runConfig.getNumberOfBlocks());
+	std::string csvTimesLog = smCudaBinarizer->getBinarizerExecutionInfo(runConfig->getFullFilePath());
+	std::string configLog = getConfigurationInfo(runConfig->getThreadsPerBlock(), runConfig->getNumberOfBlocks());
 
 	delete sharedMemoryGpuBinarizedImage;
 	delete smCudaBinarizer;
@@ -131,14 +122,14 @@ std::string runGpuSharedMemoryImplementation(RunConfiguration runConfig)
 	return csvTimesLog + "," + configLog;
 }
 
-void runGpuMonoKernelImplementation(RunConfiguration runConfig)
+void runGpuMonoKernelImplementation(RunConfiguration* runConfig)
 {
 
-	MonoCudaOtsuBinarizer *monoCudaBinarizer = new MonoCudaOtsuBinarizer(runConfig.getThreadsPerBlock(), runConfig.shouldDrawHistograms());
+	MonoCudaOtsuBinarizer *monoCudaBinarizer = new MonoCudaOtsuBinarizer(runConfig->getThreadsPerBlock(), runConfig->shouldDrawHistograms());
 
-	PngImage *monoKernelGpuBinarizedImage = monoCudaBinarizer->binarize(runConfig.getLoadedImage());
+	PngImage *monoKernelGpuBinarizedImage = monoCudaBinarizer->binarize(runConfig->getLoadedImage());
 
-	std::string monoKernelGpuBinarizedFilename = ImageFileUtil::addPrefix(runConfig.getFullFilePath(), "gpu_mono_binarized_");
+	std::string monoKernelGpuBinarizedFilename = ImageFileUtil::addPrefix(runConfig->getFullFilePath(), "gpu_mono_binarized_");
 
 	ImageFileUtil::savePngFile(monoKernelGpuBinarizedImage, monoKernelGpuBinarizedFilename.c_str());
 
@@ -146,168 +137,53 @@ void runGpuMonoKernelImplementation(RunConfiguration runConfig)
 	delete monoCudaBinarizer;
 }
 
-void printHelp()
-{
-	std::string helpMessage = "";
-	helpMessage.append("Help:\n");
-	helpMessage.append("<program> filePath cudaThreadsNumber cudaBlocksNumber [optional flags]\n");
-	helpMessage.append("\tFlags:\n");
-	helpMessage.append("\t\t -h show histogram values for each binarizer run\n");
-	helpMessage.append("\t\t -d <deviceName> choose GPU device by given name (defaults to 0)\n");
-	helpMessage.append("\t\t --cpu run CPU version of algorithm\n");
-	helpMessage.append("\t\t --cpu-openmp run CPU with OpenMP version of algorithm\n");
-	helpMessage.append("\t\t --gpu run GPU reference version of algorithm\n");
-	helpMessage.append("\t\t --gpu-sm run GPU version of algorithm with shared memory optimization\n");
-	helpMessage.append("\t\t --gpu-mono run GPU version of algorithm with single kernel arch on single block\n");
-	helpMessage.append("\t\t --run-all run all implemented versions of Otsu algorithm (CPU and GPU)\n");
-
-	printf(helpMessage.c_str());
-}
-
-int parseIntInputParam(const char *param, int defaultValue)
-{
-	return std::atoi(param) > 0 ? std::atoi(param) : defaultValue;
-}
-
 // CudaOtsu filepath/dirpath threadsPerBlock numBlocks
 int main(int argc, char **argv)
 {
-	static const int DEFAULT_THREADS_NUMBER = 512;
-	static const int DEFAULT_BLOCKS_NUMBER = 512;
-	static const int DEFAULT_CPU_THREADS = 16;
-
-	RunConfigurationBuilder configBuilder = RunConfigurationBuilder();
-
-	std::string fullFilePath;
-	int cudaDeviceId;
-
 	std::vector<std::string> binarizerTimestamps;
 	const char *timestampsFile = "times.csv";
 
-	// Default CudaOtsuBinarizer usage
-	bool algChosenToRun[6] = {false, true, false, false, false, false};
+	AppRunner *appRunner = new AppRunner();
 
-	if (argc <= 3)
+	appRunner->loadInputConfiguration(argc, argv);
+
+	RunConfiguration* runConfig = appRunner->getRunConfig();
+
+	runConfig->print();
+
+	if (runConfig->hasLoadedImage())
 	{
-		printHelp();
-		CudaUtil::getAvailableGpuNames();
-		return -1;
-	}
-	else
-	{
-		fullFilePath = argv[1];
-		configBuilder.forFileInPath(fullFilePath);
-		configBuilder.withThreadsPerBlock(parseIntInputParam(argv[2], DEFAULT_THREADS_NUMBER));
-		configBuilder.withNumberOfBlocks(parseIntInputParam(argv[3], DEFAULT_BLOCKS_NUMBER));
-		configBuilder.withCpuThreads(parseIntInputParam(argv[4], DEFAULT_CPU_THREADS));
-		configBuilder.withHistograms(false);
+		// To refactor
 
-		for (int argumentIndex = 5; argumentIndex < argc; argumentIndex++)
-		{
-			std::string flag(argv[argumentIndex]);
-
-			if (flag == "-h")
-			{
-				configBuilder.withHistograms(true);
-				continue;
-			}
-
-			if (flag == "-d")
-			{
-				int nextArgument = argumentIndex + 1;
-				if (nextArgument < argc)
-				{
-					cudaDeviceId = std::atoi(argv[nextArgument]);
-
-					bool gpuSetSuccess = CudaUtil::setGpu(cudaDeviceId);
-
-					if (!gpuSetSuccess)
-					{
-						CudaUtil::getAvailableGpuNames();
-						return -1;
-					}
-
-					argumentIndex = nextArgument;
-					continue;
-				}
-			}
-
-			if (flag == "--cpu")
-			{
-				algChosenToRun[CPU] = true;
-				continue;
-			}
-
-			if (flag == "--cpu-openmp")
-			{
-				algChosenToRun[CPU_OpenMP] = true;
-				continue;
-			}
-
-			if (flag == "--gpu")
-			{
-				algChosenToRun[GPU] = true;
-				continue;
-			}
-
-			if (flag == "--gpu-sm")
-			{
-				algChosenToRun[GPU_SharedMemory] = true;
-				continue;
-			}
-
-			if (flag == "--gpu-mono")
-			{
-				algChosenToRun[GPU_MonoKernel] = true;
-				continue;
-			}
-
-			if (flag == "--run-all")
-			{
-				algChosenToRun[ALL] = true;
-				continue;
-			}
-		}
-	}
-
-	RunConfiguration runConfig = configBuilder
-									 .forImage(ImageFileUtil::loadPngFile(fullFilePath.c_str()))
-									 .build();
-
-	runConfig.print();
-
-	if (runConfig.hasLoadedImage())
-	{
-
-		if (algChosenToRun[CPU] || algChosenToRun[ALL])
+		if (runConfig->shouldRunAlgorithm(CPU))
 		{
 			runCpuImplementation(runConfig);
 		}
 
-		if (algChosenToRun[CPU_OpenMP] || algChosenToRun[ALL])
+		if (runConfig->shouldRunAlgorithm(CPU_OpenMP))
 		{
 			runCpuOpenmpImplementation(runConfig);
 		}
 
-		if (algChosenToRun[GPU] || algChosenToRun[ALL])
+		if (runConfig->shouldRunAlgorithm(GPU))
 		{
 			std::string csvTimeLog = runGpuImplementation(runConfig);
 			binarizerTimestamps.push_back(csvTimeLog);
 		}
 
-		if (algChosenToRun[GPU_SharedMemory] || algChosenToRun[ALL])
+		if (runConfig->shouldRunAlgorithm(GPU_SharedMemory))
 		{
 			std::string csvTimeLog = runGpuSharedMemoryImplementation(runConfig);
 			binarizerTimestamps.push_back(csvTimeLog);
 		}
 
-		if (algChosenToRun[GPU_MonoKernel] || algChosenToRun[ALL])
+		if (runConfig->shouldRunAlgorithm(GPU_MonoKernel))
 		{
 			runGpuMonoKernelImplementation(runConfig);
 		}
+	} else {
+		printf("\nFile not loaded");
 	}
-
-	// delete loadedImage;
 
 	ImageFileUtil::saveCsvFile(binarizerTimestamps, timestampsFile);
 

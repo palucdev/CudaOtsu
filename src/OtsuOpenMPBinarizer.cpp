@@ -14,7 +14,7 @@ PngImage* OtsuOpenMPBinarizer::binarize(PngImage * imageToBinarize, int cpuThrea
 
 	int threshold = findThreshold(histogram, imageToBinarize->getTotalPixels(), cpuThreads);
 
-	printf("\t[CPU-OpenMP] Threshold value: %d", threshold);
+	printf("\t[CPU-OpenMP] Threshold value: %d\n", threshold);
 
 	return binarizeImage(imageToBinarize, threshold, cpuThreads);
 }
