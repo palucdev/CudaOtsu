@@ -1,4 +1,4 @@
-#include "model/PngImage.h" 
+#include "../../model/PngImage.h" 
 
 #pragma once
 class MonoCudaOtsuBinarizer

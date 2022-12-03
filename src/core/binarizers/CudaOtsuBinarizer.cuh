@@ -1,5 +1,5 @@
-#include "model/PngImage.h"
-#include "model/ExecutionTimestamp.h"
+#include "../../model/PngImage.h"
+#include "../../model/ExecutionTimestamp.h"
 
 #pragma once
 class CudaOtsuBinarizer
