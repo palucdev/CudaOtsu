@@ -14,13 +14,18 @@ MethodImplementation OtsuBinarizer::getBinarizerType()
 	return CPU;
 }
 
+const char* OtsuBinarizer::getBinarizedFilePrefix()
+{
+	return "cpu_binarized_";
+}
+
 BinarizationResult* OtsuBinarizer::binarize(RunConfiguration* runConfig)
 {
 	ExecutionTimestamp* executionTimestamp = new ExecutionTimestamp();
 	clock_t time;
 	time = clock();
 
-	std::string cpuBinarizedFilename = ImageFileUtil::addPrefix(runConfig->getFullFilePath(), "cpu_binarized_");
+	std::string cpuBinarizedFilename = ImageFileUtil::addPrefix(runConfig->getFullFilePath(), getBinarizedFilePrefix());
 
 	PngImage *cpuBinarizedImage = binarize();
 

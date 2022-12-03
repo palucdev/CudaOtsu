@@ -13,6 +13,7 @@ private:
 	std::vector<double> histogram;
 
 	MethodImplementation getBinarizerType();
+	const char* getBinarizedFilePrefix();
 	std::vector<double> calculateHistogram();
 	int findThreshold();
 	PngImage* binarize();

@@ -32,29 +32,6 @@ std::string getConfigurationInfo(int threadsPerBlock, int numBlocks)
 	return ImageFileUtil::joinString(params, ',');
 }
 
-void runCpuOpenmpImplementation(RunConfiguration* runConfig)
-{
-
-	printf("\nSetting OpenMP threads num to %d threads\n", runConfig->getCpuThreads());
-	omp_set_dynamic(0);
-	omp_set_num_threads(runConfig->getCpuThreads());
-
-	clock_t time;
-	time = clock();
-
-	std::string cpuBinarizedFilename = ImageFileUtil::addPrefix(runConfig->getFullFilePath(), "cpu-openmp_binarized_");
-
-	PngImage *cpuBinarizedImage = OtsuOpenMPBinarizer::binarize(runConfig->getLoadedImage(), runConfig->getCpuThreads());
-
-	time = clock() - time;
-
-	printf("\nCPU-OpenMP binarization taken %f seconds\n", ((double)time / CLOCKS_PER_SEC));
-
-	ImageFileUtil::savePngFile(cpuBinarizedImage, cpuBinarizedFilename.c_str());
-
-	delete cpuBinarizedImage;
-}
-
 std::string runGpuImplementation(RunConfiguration* runConfig)
 {
 
@@ -144,7 +121,8 @@ int main(int argc, char **argv)
 
 		if (runConfig->shouldRunAlgorithm(CPU_OpenMP))
 		{
-			runCpuOpenmpImplementation(runConfig);
+			OtsuOpenMPBinarizer* openMpBinarizer = new OtsuOpenMPBinarizer(runConfig->getLoadedImage());
+			openMpBinarizer->binarize(runConfig)->printResult();
 		}
 
 		if (runConfig->shouldRunAlgorithm(GPU))

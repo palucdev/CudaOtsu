@@ -1,15 +1,22 @@
-#include "../../model/PngImage.h" 
+#include "../../model/PngImage.h"
+#include "OtsuBinarizer.h"
 
 #pragma once
-class OtsuOpenMPBinarizer
+class OtsuOpenMPBinarizer: public AbstractBinarizer
 {
 public:
-	static PngImage* binarize(PngImage* imageToBinarize, int cpuThreads);
-private:
-	OtsuOpenMPBinarizer();
-	static void calculateHistogram(const std::vector<unsigned char>& image, std::vector<double>& histogram, int cpuThreads);
-	static int findThreshold(std::vector<double>& histogram, long int totalPixels, int cpuThreads);
-	static PngImage* binarizeImage(PngImage * imageToBinarize, int threshold, int cpuThreads);
-	static void showHistogram(double* histogram);
-};
+	BinarizationResult *binarize(RunConfiguration *runConfig);
+	OtsuOpenMPBinarizer(PngImage* imageToBinarize);
 
+private:
+	PngImage* imageToBinarize;
+	std::vector<double> histogram;
+	int cpuThreads;
+
+	MethodImplementation getBinarizerType();
+	const char* getBinarizedFilePrefix();
+	std::vector<double> calculateHistogram();
+	int findThreshold();
+	PngImage* binarize();
+	void showHistogram();
+};
