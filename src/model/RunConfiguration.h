@@ -13,8 +13,7 @@ private:
 	bool drawHistograms;
 	PngImage* loadedImage;
 
-	// Default CudaOtsuBinarizer usage
-    bool algChosenToRun[6] = {false, true, false, false, false, false};
+    bool algChosenToRun[6] = {false, false, false, false, false, false};
 
 public:
 	RunConfiguration();

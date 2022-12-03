@@ -28,15 +28,13 @@ BinarizationResult* OtsuBinarizer::binarize(RunConfiguration* runConfig)
 
 	executionTimestamp->binarizationTimeInSeconds = ((double)time / CLOCKS_PER_SEC);
 
-	printf("\nCPU binarization took %f seconds\n", ((double)time / CLOCKS_PER_SEC));
-
 	ImageFileUtil::savePngFile(cpuBinarizedImage, cpuBinarizedFilename.c_str());
 
 	delete cpuBinarizedImage;
 
 	return new BinarizationResult(
 		getBinarizerType(),
-		runConfig->getFullFilePath(),
+		cpuBinarizedFilename.c_str(),
 		executionTimestamp
 	);
 }
@@ -110,7 +108,7 @@ int OtsuBinarizer::findThreshold() {
 		}
 	}
 
-	printf("\t[CPU] Threshold value: %d", threshold);
+	printf("[CPU] Threshold value: %d", threshold);
 
 	return threshold;
 }

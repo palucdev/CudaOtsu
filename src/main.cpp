@@ -139,7 +139,7 @@ int main(int argc, char **argv)
 		if (runConfig->shouldRunAlgorithm(CPU))
 		{
 			OtsuBinarizer* cpuBinarizer = new OtsuBinarizer(runConfig->getLoadedImage());
-			cpuBinarizer->binarize(runConfig);
+			cpuBinarizer->binarize(runConfig)->printResult();
 		}
 
 		if (runConfig->shouldRunAlgorithm(CPU_OpenMP))

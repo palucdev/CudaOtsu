@@ -12,4 +12,6 @@ private:
 public:
     BinarizationResult(unsigned int method, std::string binarizedImagePath, ExecutionTimestamp* executionTimestamp);
     ~BinarizationResult();
+
+    void printResult();
 };
