@@ -5,11 +5,11 @@
 class BinarizationResult
 {
 private:
-    ExecutionTimestamp *executionTimestamp;
     unsigned int method;
     std::string binarizedImagePath;
+    ExecutionTimestamp *executionTimestamp;
 
 public:
-    BinarizationResult();
+    BinarizationResult(unsigned int method, std::string binarizedImagePath, ExecutionTimestamp* executionTimestamp);
     ~BinarizationResult();
 };

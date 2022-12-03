@@ -17,5 +17,5 @@ public:
     ~AppRunner();
     RunConfiguration* getRunConfig();
     void loadInputConfiguration(int argc, char **argv);
-    void runBinarization();
+    std::map<MethodImplementation, BinarizationResult *> runBinarization();
 };

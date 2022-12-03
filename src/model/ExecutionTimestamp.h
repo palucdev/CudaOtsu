@@ -6,9 +6,9 @@ class ExecutionTimestamp
 public:
 	ExecutionTimestamp();
 	~ExecutionTimestamp();
-	double histogramBuildingTime;
-	double thresholdFindingTime;
-	double binarizationTime;
+	double histogramBuildingTimeInSeconds;
+	double thresholdFindingTimeInSeconds;
+	double binarizationTimeInSeconds;
 	std::string toCommaSeparatedRow(std::string fileName, std::string tag);
 	double getExecutionTime();
 };

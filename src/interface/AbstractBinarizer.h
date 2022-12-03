@@ -4,5 +4,7 @@
 class AbstractBinarizer
 {
 public:
-    virtual BinarizationResult *binarize(RunConfiguration *runConfig);
+    virtual BinarizationResult *binarize(RunConfiguration *runConfig) = 0;
+private:
+    virtual MethodImplementation getBinarizerType() = 0;
 };

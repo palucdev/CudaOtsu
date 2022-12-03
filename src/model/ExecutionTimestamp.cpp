@@ -5,9 +5,9 @@
 
 ExecutionTimestamp::ExecutionTimestamp()
 {
-	this->histogramBuildingTime = 0;
-	this->thresholdFindingTime = 0;
-	this->binarizationTime = 0;
+	this->histogramBuildingTimeInSeconds = 0;
+	this->thresholdFindingTimeInSeconds = 0;
+	this->binarizationTimeInSeconds = 0;
 }
 
 
@@ -21,9 +21,9 @@ std::string ExecutionTimestamp::toCommaSeparatedRow(std::string fileName, std::s
 	std::vector<std::string> values;
 	values.push_back(fileName);
 	values.push_back(tag);
-	values.push_back(std::to_string(histogramBuildingTime));
-	values.push_back(std::to_string(thresholdFindingTime));
-	values.push_back(std::to_string(binarizationTime));
+	values.push_back(std::to_string(histogramBuildingTimeInSeconds));
+	values.push_back(std::to_string(thresholdFindingTimeInSeconds));
+	values.push_back(std::to_string(binarizationTimeInSeconds));
 	values.push_back(std::to_string(getExecutionTime()));
 
 	return ImageFileUtil::joinString(values, ',');
@@ -31,5 +31,5 @@ std::string ExecutionTimestamp::toCommaSeparatedRow(std::string fileName, std::s
 
 double ExecutionTimestamp::getExecutionTime()
 {
-	return histogramBuildingTime + thresholdFindingTime + binarizationTime;
+	return histogramBuildingTimeInSeconds + thresholdFindingTimeInSeconds + binarizationTimeInSeconds;
 }

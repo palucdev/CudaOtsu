@@ -150,7 +150,7 @@ double* CudaOtsuBinarizer::cudaCalculateHistogram(unsigned char* rawPixels, long
 	float milliseconds = 0;
 	cudaEventElapsedTime(&milliseconds, start, stop);
 	printf("\n\t[%s] Histogram calculated in %.6f milliseconds \n", this->TAG, milliseconds);
-	binarizerTimestamp_->histogramBuildingTime += milliseconds;
+	binarizerTimestamp_->histogramBuildingTimeInSeconds += milliseconds * 1000;
 
 	cudaFree(deviceHistogram);
 	cudaFree(deviceRawPixels);
@@ -202,7 +202,7 @@ unsigned char CudaOtsuBinarizer::cudaFindThreshold(double* histogram, long int t
 	float milliseconds = 0;
 	cudaEventElapsedTime(&milliseconds, start, stop);
 	printf("\n\t[%s] Threshold calculated in %.6f milliseconds \n", this->TAG, milliseconds);
-	binarizerTimestamp_->thresholdFindingTime += milliseconds;
+	binarizerTimestamp_->thresholdFindingTimeInSeconds += milliseconds * 1000;
 
 	cudaFree(deviceHistogram);
 	cudaFree(deviceBetweenClassVariances);
@@ -244,7 +244,7 @@ unsigned char* CudaOtsuBinarizer::cudaBinarize(unsigned char * rawPixels, long t
 	float milliseconds = 0;
 	cudaEventElapsedTime(&milliseconds, start, stop);
 	printf("\n\t[%s] Binarized in %.6f milliseconds \n", this->TAG, milliseconds);
-	binarizerTimestamp_->binarizationTime += milliseconds;
+	binarizerTimestamp_->binarizationTimeInSeconds += milliseconds * 1000;
 
 	cudaFree(deviceRawPixels);
 

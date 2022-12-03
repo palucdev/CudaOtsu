@@ -16,11 +16,11 @@
 #include "utils/RunConfigurationBuilder.h"
 #include "model/PngImage.h"
 #include "model/RunConfiguration.h"
-#include "OtsuBinarizer.h"
-#include "OtsuOpenMPBinarizer.h"
-#include "CudaOtsuBinarizer.cuh"
-#include "SMCudaOtsuBinarizer.cuh"
-#include "MonoCudaOtsuBinarizer.cuh"
+#include "core/binarizers/OtsuBinarizer.h"
+#include "core/binarizers/OtsuOpenMPBinarizer.h"
+#include "core/binarizers/CudaOtsuBinarizer.cuh"
+#include "core/binarizers/SMCudaOtsuBinarizer.cuh"
+#include "core/binarizers/MonoCudaOtsuBinarizer.cuh"
 
 std::string getConfigurationInfo(int threadsPerBlock, int numBlocks)
 {
@@ -30,25 +30,6 @@ std::string getConfigurationInfo(int threadsPerBlock, int numBlocks)
 	params.push_back(CudaUtil::getDeviceName(CudaUtil::getCurrentDevice()));
 
 	return ImageFileUtil::joinString(params, ',');
-}
-
-void runCpuImplementation(RunConfiguration* runConfig)
-{
-
-	clock_t time;
-	time = clock();
-
-	std::string cpuBinarizedFilename = ImageFileUtil::addPrefix(runConfig->getFullFilePath(), "cpu_binarized_");
-
-	PngImage *cpuBinarizedImage = OtsuBinarizer::binarize(runConfig->getLoadedImage());
-
-	time = clock() - time;
-
-	printf("\nCPU binarization took %f seconds\n", ((double)time / CLOCKS_PER_SEC));
-
-	ImageFileUtil::savePngFile(cpuBinarizedImage, cpuBinarizedFilename.c_str());
-
-	delete cpuBinarizedImage;
 }
 
 void runCpuOpenmpImplementation(RunConfiguration* runConfig)
@@ -157,7 +138,8 @@ int main(int argc, char **argv)
 
 		if (runConfig->shouldRunAlgorithm(CPU))
 		{
-			runCpuImplementation(runConfig);
+			OtsuBinarizer* cpuBinarizer = new OtsuBinarizer(runConfig->getLoadedImage());
+			cpuBinarizer->binarize(runConfig);
 		}
 
 		if (runConfig->shouldRunAlgorithm(CPU_OpenMP))

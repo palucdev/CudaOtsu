@@ -117,7 +117,7 @@ unsigned char SMCudaOtsuBinarizer::cudaFindThreshold(double* histogram, long int
 	float milliseconds = 0;
 	cudaEventElapsedTime(&milliseconds, start, stop);
 	printf("\n\t[%s] Threshold calculated in %.6f milliseconds \n", this->TAG, milliseconds);
-	binarizerTimestamp_->thresholdFindingTime += milliseconds;
+	binarizerTimestamp_->thresholdFindingTimeInSeconds += milliseconds * 1000;
 
 	cudaFree(deviceHistogram);
 	cudaFree(deviceBetweenClassVariances);
@@ -170,7 +170,7 @@ double* SMCudaOtsuBinarizer::cudaCalculateHistogram(unsigned char* rawPixels, lo
 	float milliseconds = 0;
 	cudaEventElapsedTime(&milliseconds, start, stop);
 	printf("\n\t[%s] Histogram calculated in %.6f milliseconds \n", this->TAG, milliseconds);
-	binarizerTimestamp_->histogramBuildingTime += milliseconds;
+	binarizerTimestamp_->histogramBuildingTimeInSeconds += milliseconds * 1000;
 
 	cudaFree(deviceHistogram);
 	cudaFree(deviceRawPixels);
