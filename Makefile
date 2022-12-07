@@ -7,6 +7,7 @@ SOURCE_FILES :=
 ifeq ($(OS), Windows_NT)
 	SOURCE_FILES = $(shell find $(SOURCE_DIR) -name *.cpp -o -name *.cu)
 else 
+	UNAME_S = $(shell uname -s)
 	ifeq ($(UNAME_S), Linux)
 		SOURCE_FILES = $(shell find $(SOURCE_DIR) -name '*.cpp' -o -name '*.cu')
 	else
@@ -20,7 +21,7 @@ list_sources:
 
 build:
 	mkdir -p ${BUILD_DIR}
-	nvcc -x cu ${SOURCE_FILES} --std=c++11 -lineinfo -o ${BUILD_DIR}/${EXEC_FILE} -Xcompiler -openmp
+	nvcc -x cu ${SOURCE_FILES} --std=c++11 -lineinfo -o ${BUILD_DIR}/${EXEC_FILE} -Xcompiler -fopenmp
 
 run:
 	./${BUILD_DIR}/${EXEC_FILE} $(file) $(threads) $(blocks) -d $(device_id)
